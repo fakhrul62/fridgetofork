@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { useKitchenStore, type RecipeOption } from "@/store/use-kitchen-store";
@@ -39,9 +39,29 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
   const setCurrentStep = useKitchenStore((state) => state.setCurrentStep);
   const setStageStatus = useKitchenStore((state) => state.setStageStatus);
   const setActiveRecipe = useKitchenStore((state) => state.setActiveRecipe);
+  const startedSessionRef = useRef(false);
+  const completedSessionRef = useRef(false);
   const currentStep = recipe.steps[playback.stepIndex];
   const isComplete = playback.stepIndex >= recipe.steps.length;
   const progress = isComplete ? 100 : (playback.stepIndex / recipe.steps.length) * 100;
+
+  useEffect(() => {
+    if (startedSessionRef.current) {
+      return;
+    }
+
+    startedSessionRef.current = true;
+    void fetch("/api/cooking-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        recipeId: recipe.id,
+        completed: false,
+      }),
+    });
+  }, [recipe.id]);
 
   useEffect(() => {
     if (!currentStep) {
@@ -51,6 +71,21 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
         animationType: null,
         remainingSeconds: 0,
       });
+
+      if (!completedSessionRef.current) {
+        completedSessionRef.current = true;
+        void fetch("/api/cooking-session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            recipeId: recipe.id,
+            completed: true,
+          }),
+        });
+      }
+
       return;
     }
 
@@ -64,6 +99,7 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
     currentStep,
     playback.remainingSeconds,
     playback.stepIndex,
+    recipe.id,
     recipe.steps.length,
     setCurrentStep,
     setStageStatus,

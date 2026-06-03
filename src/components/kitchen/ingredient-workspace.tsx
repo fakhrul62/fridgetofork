@@ -3,10 +3,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useEffect } from "react";
 
 import { IngredientCard } from "@/components/kitchen/ingredient-card";
 import { CookingStage } from "@/components/kitchen/cooking-stage";
-import { categoryLabels, ingredients } from "@/data/ingredients";
+import { categoryLabels, ingredients as fallbackIngredients } from "@/data/ingredients";
 import { cn } from "@/lib/utils";
 import { useKitchenStore, type Ingredient } from "@/store/use-kitchen-store";
 import type { IngredientCategory } from "@/types/database";
@@ -16,6 +17,8 @@ const categories = Object.keys(categoryLabels) as IngredientCategory[];
 export function IngredientWorkspace() {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<IngredientCategory | "all">("all");
+  const [availableIngredients, setAvailableIngredients] =
+    useState<Ingredient[]>(fallbackIngredients);
   const selectedIngredients = useKitchenStore((state) => state.selectedIngredients);
   const maxIngredients = useKitchenStore((state) => state.maxIngredients);
   const selectIngredient = useKitchenStore((state) => state.selectIngredient);
@@ -26,10 +29,35 @@ export function IngredientWorkspace() {
     [selectedIngredients],
   );
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadIngredients = async () => {
+      try {
+        const response = await fetch("/api/ingredients");
+        const payload = (await response.json()) as { ingredients?: Ingredient[] };
+
+        if (isMounted && response.ok && payload.ingredients?.length) {
+          setAvailableIngredients(payload.ingredients);
+        }
+      } catch {
+        if (isMounted) {
+          setAvailableIngredients(fallbackIngredients);
+        }
+      }
+    };
+
+    void loadIngredients();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const filteredIngredients = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return ingredients.filter((ingredient) => {
+    return availableIngredients.filter((ingredient) => {
       const matchesCategory =
         activeCategory === "all" || ingredient.category === activeCategory;
       const matchesQuery =
@@ -38,7 +66,7 @@ export function IngredientWorkspace() {
 
       return matchesCategory && matchesQuery;
     });
-  }, [activeCategory, query]);
+  }, [activeCategory, availableIngredients, query]);
 
   const toggleIngredient = (ingredient: Ingredient) => {
     if (selectedIds.has(ingredient.id)) {

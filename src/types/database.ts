@@ -100,20 +100,20 @@ export type Database = {
       saved_recipes: {
         Row: {
           id: string;
-          user_id: string;
-          recipe_id: string;
+          user_id: string | null;
+          recipe_id: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
-          user_id: string;
-          recipe_id: string;
+          user_id?: string | null;
+          recipe_id?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
-          user_id?: string;
-          recipe_id?: string;
+          user_id?: string | null;
+          recipe_id?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -121,22 +121,22 @@ export type Database = {
       cooking_sessions: {
         Row: {
           id: string;
-          user_id: string;
-          recipe_id: string;
+          user_id: string | null;
+          recipe_id: string | null;
           completed: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
-          user_id: string;
-          recipe_id: string;
+          user_id?: string | null;
+          recipe_id?: string | null;
           completed?: boolean;
           created_at?: string;
         };
         Update: {
           id?: string;
-          user_id?: string;
-          recipe_id?: string;
+          user_id?: string | null;
+          recipe_id?: string | null;
           completed?: boolean;
           created_at?: string;
         };
