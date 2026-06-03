@@ -111,3 +111,71 @@ button {
     opacity: 1;
   }
 }
+
+@keyframes sizzleWave {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(8px) scaleY(0.72);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: translateY(-9px) scaleY(1.14);
+  }
+}
+
+@keyframes bubbleRise {
+  0% {
+    opacity: 0;
+    transform: translateY(26px) scale(0.45);
+  }
+
+  35% {
+    opacity: 0.75;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-44px) scale(1.15);
+  }
+}
+
+@keyframes spoonStir {
+  from {
+    transform: rotate(0deg) translateX(22px) rotate(20deg);
+  }
+
+  to {
+    transform: rotate(360deg) translateX(22px) rotate(20deg);
+  }
+}
+
+@keyframes heatShimmer {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: skewX(-5deg) translateX(-4px);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: skewX(5deg) translateX(4px);
+  }
+}
+
+@keyframes sparkleBurst {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(0) scale(0.2);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(86px) scale(1);
+  }
+}
