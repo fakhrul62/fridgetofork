@@ -26,6 +26,14 @@ export const metadata: Metadata = {
   title: "Fridge to Fork | Mise en Place",
   description:
     "Pick your ingredients, generate a dish, and watch a playful animated cooking stage bring dinner to life.",
+  metadataBase: new URL("https://fridgetofork.vercel.app"),
+  openGraph: {
+    title: "Fridge to Fork",
+    description:
+      "An animated mise en place cooking app where your ingredients become a playful recipe stage.",
+    siteName: "Fridge to Fork",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

@@ -1,10 +1,15 @@
 "use client";
 
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock3, Sparkles, Utensils } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useRef } from "react";
 
 import { Logo } from "@/components/brand/logo";
 import { IngredientWorkspace } from "@/components/kitchen/ingredient-workspace";
+import { featuredRecipes } from "@/data/featured-recipes";
 
 const floatingIngredients = [
   { emoji: "🍅", label: "Tomato", className: "left-[8%] top-[21%] delay-0" },
@@ -31,9 +36,109 @@ const foundationCards = [
   },
 ];
 
+const heroHeadline = "What's in your kitchen?";
+const howItWorks = [
+  ["Pick", "Choose up to 8 ingredients from your fridge, pantry, or wishful thinking."],
+  ["Generate", "Get three chef-style ideas shaped around what you already have."],
+  ["Cook", "Watch the animated stage chop, sizzle, stir, bake, and plate."],
+];
+
+const stats = [
+  ["300", "Recipes Generated"],
+  ["36", "Ingredients"],
+  ["7", "Animation Types"],
+  ["100", "Always Free"],
+];
+
 export default function Home() {
+  const rootRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const ctx = gsap.context(() => {
+      gsap.from(".hero-char", {
+        yPercent: 115,
+        opacity: 0,
+        rotate: 4,
+        duration: 0.72,
+        ease: "power4.out",
+        stagger: 0.018,
+      });
+
+      ScrollTrigger.batch(".scroll-card", {
+        start: "top 82%",
+        onEnter: (batch) => {
+          gsap.fromTo(
+            batch,
+            { y: 34, opacity: 0, scale: 0.96 },
+            {
+              y: 0,
+              opacity: 1,
+              scale: 1,
+              duration: 0.65,
+              ease: "power3.out",
+              stagger: 0.08,
+            },
+          );
+        },
+        once: true,
+      });
+
+      gsap.utils.toArray<HTMLElement>(".section-wipe").forEach((heading) => {
+        gsap.fromTo(
+          heading,
+          { y: 34, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.7,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: heading,
+              start: "top 84%",
+            },
+          },
+        );
+      });
+
+      gsap.utils.toArray<HTMLElement>(".stat-number").forEach((stat) => {
+        const target = Number(stat.dataset.target ?? "0");
+        const counter = { value: 0 };
+
+        gsap.to(counter, {
+          value: target,
+          duration: 1.4,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: stat,
+            start: "top 85%",
+            once: true,
+          },
+          onUpdate: () => {
+            stat.textContent = `${Math.round(counter.value)}`;
+          },
+        });
+      });
+
+      gsap.from(".footer-word", {
+        y: 20,
+        opacity: 0,
+        duration: 0.5,
+        stagger: 0.04,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: ".footer-words",
+          start: "top 88%",
+        },
+      });
+    }, rootRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <main className="grain-overlay min-h-screen overflow-hidden">
+    <main ref={rootRef} className="grain-overlay min-h-screen overflow-hidden">
       <section className="relative flex min-h-screen items-center px-5 py-6 sm:px-8 lg:px-12">
         <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[0.94fr_1.06fr] lg:items-center">
           <motion.div
@@ -52,8 +157,17 @@ export default function Home() {
               >
                 Everything in its place. Everything in its time.
               </motion.p>
-              <h1 className="max-w-4xl font-display text-6xl font-semibold leading-[0.9] tracking-normal text-[var(--color-warm-brown)] sm:text-7xl lg:text-8xl">
-                What&apos;s in your kitchen?
+              <h1 className="max-w-4xl overflow-hidden font-display text-6xl font-semibold leading-[0.9] tracking-normal text-[var(--color-warm-brown)] sm:text-7xl lg:text-8xl">
+                {heroHeadline.split("").map((char, index) => (
+                  <span
+                    key={`${char}-${index}`}
+                    className="hero-char inline-block"
+                    aria-hidden="true"
+                  >
+                    {char === " " ? "\u00A0" : char}
+                  </span>
+                ))}
+                <span className="sr-only">{heroHeadline}</span>
               </h1>
               <p className="max-w-xl text-lg leading-8 text-[var(--color-warm-brown)]/78 sm:text-xl">
                 Pick your ingredients. We&apos;ll handle the rest with a warm,
@@ -151,7 +265,125 @@ export default function Home() {
         ))}
       </section>
 
+      <section className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="section-wipe font-display text-5xl font-semibold leading-none">
+            Pick. Generate. Cook.
+          </h2>
+          <div className="relative mt-8 grid gap-4 md:grid-cols-3">
+            <svg
+              className="absolute left-8 right-8 top-10 hidden h-8 w-[calc(100%-4rem)] md:block"
+              viewBox="0 0 900 40"
+              fill="none"
+              aria-hidden="true"
+            >
+              <motion.path
+                d="M10 20 C220 0 330 40 450 20 C610 -4 710 44 890 20"
+                stroke="#E2714B"
+                strokeWidth="4"
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                whileInView={{ pathLength: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2, ease: "easeInOut" }}
+              />
+            </svg>
+            {howItWorks.map(([title, description], index) => (
+              <article
+                key={title}
+                className="scroll-card rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/52 p-6 opacity-0 shadow-[4px_4px_0_rgba(61,43,31,0.1)] backdrop-blur"
+              >
+                <span className="grid size-12 place-items-center rounded-full bg-[var(--color-butter)] font-mono text-sm font-semibold">
+                  0{index + 1}
+                </span>
+                <h3 className="mt-8 font-display text-4xl font-semibold">{title}</h3>
+                <p className="mt-3 leading-7 text-[var(--color-warm-brown)]/68">
+                  {description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <IngredientWorkspace />
+
+      <section className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <h2 className="section-wipe max-w-2xl font-display text-5xl font-semibold leading-none">
+              Featured recipes from the warm shelf
+            </h2>
+            <Link
+              href="/explore"
+              className="w-fit rounded-full bg-[var(--color-terracotta)] px-5 py-3 font-semibold text-white shadow-[3px_3px_0_var(--color-warm-brown)]"
+            >
+              Explore all
+            </Link>
+          </div>
+          <div className="mt-8 columns-1 gap-4 md:columns-2 xl:columns-3">
+            {featuredRecipes.map((recipe, index) => (
+              <Link
+                key={recipe.id}
+                href={`/recipe/${recipe.id}`}
+                className="scroll-card mb-4 block break-inside-avoid rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/58 p-5 opacity-0 shadow-[4px_4px_0_rgba(61,43,31,0.1)]"
+                style={{ minHeight: `${260 + index * 34}px` }}
+              >
+                <p className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--color-olive)]">
+                  {recipe.cuisine} · {recipe.cookTime} min
+                </p>
+                <h3 className="mt-5 font-display text-4xl font-semibold leading-none">
+                  {recipe.name}
+                </h3>
+                <p className="mt-4 leading-7 text-[var(--color-warm-brown)]/68">
+                  {recipe.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-4">
+          {stats.map(([value, label]) => (
+            <article
+              key={label}
+              className="scroll-card rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-[var(--color-butter)]/42 p-6 opacity-0 shadow-[4px_4px_0_rgba(61,43,31,0.1)]"
+            >
+              <p
+                className="stat-number font-display text-6xl font-semibold"
+                data-target={value}
+              >
+                0
+              </p>
+              <p className="mt-3 font-mono text-xs uppercase tracking-[0.14em]">{label}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-[var(--color-charcoal)] p-8 text-[var(--color-cream)] shadow-[8px_8px_0_rgba(61,43,31,0.16)] sm:p-12">
+          <div className="relative">
+            <div className="absolute right-0 top-0 text-7xl opacity-20 [animation:orbitKitchen_6s_linear_infinite]">
+              🥕
+            </div>
+            <h2 className="section-wipe max-w-3xl font-display text-6xl font-semibold leading-none">
+              Your next favourite meal is 3 ingredients away.
+            </h2>
+            <motion.a
+              href="#kitchen"
+              whileHover={{ y: -3, scale: 1.02 }}
+              whileTap={{ scale: 0.95 }}
+              className="mt-8 inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[var(--color-butter)] px-7 font-semibold text-[var(--color-warm-brown)]"
+            >
+              Start Cooking
+              <ArrowRight className="size-5" />
+            </motion.a>
+          </div>
+        </div>
+      </section>
 
       <section id="foundation" className="relative z-10 px-5 pb-16 sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-3">
@@ -175,6 +407,19 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      <footer className="relative z-10 border-t border-[var(--color-warm-brown)]/12 px-5 py-10 sm:px-8 lg:px-12">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <Logo />
+          <p className="footer-words flex flex-wrap gap-x-2 font-mono text-xs uppercase tracking-[0.14em] text-[var(--color-warm-brown)]/62">
+            {"Made with pan heat and Framer Motion".split(" ").map((word, index) => (
+              <span key={`${word}-${index}`} className="footer-word inline-block">
+                {word}
+              </span>
+            ))}
+          </p>
+        </div>
+      </footer>
     </main>
   );
 }
