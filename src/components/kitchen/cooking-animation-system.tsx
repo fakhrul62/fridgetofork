@@ -36,6 +36,8 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
     remainingSeconds: recipe.steps[0]?.duration_seconds ?? 0,
   });
   const [runId, setRunId] = useState(0);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const setCurrentStep = useKitchenStore((state) => state.setCurrentStep);
   const setStageStatus = useKitchenStore((state) => state.setStageStatus);
   const setActiveRecipe = useKitchenStore((state) => state.setActiveRecipe);
@@ -147,6 +149,39 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
     setStageStatus("ready");
   };
 
+  const saveRecipe = async () => {
+    setIsSaving(true);
+    setSaveMessage("");
+
+    try {
+      const response = await fetch("/api/save-recipe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ recipeId: recipe.id }),
+      });
+      const payload = (await response.json()) as { error?: string };
+
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Could not save this recipe yet.");
+      }
+
+      setSaveMessage("Saved to your cookbook.");
+    } catch (error) {
+      setSaveMessage(
+        error instanceof Error ? error.message : "Could not save this recipe yet.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="relative z-20 flex flex-1 flex-col">
       <div className="flex items-center justify-between gap-4">
@@ -208,8 +243,22 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
             <div className="grid gap-3 sm:grid-cols-3">
               <StageButton onClick={replay} icon={RotateCcw} label="Replay" />
               <StageButton onClick={cookAgain} icon={ChefHat} label="Cook Again" />
-              <StageButton onClick={cookAgain} icon={Bookmark} label="Save Recipe" muted />
+              <StageButton
+                onClick={saveRecipe}
+                icon={Bookmark}
+                label={isSaving ? "Saving..." : "Save Recipe"}
+                muted
+              />
             </div>
+            {saveMessage ? (
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center text-sm text-white/62"
+              >
+                {saveMessage}
+              </motion.p>
+            ) : null}
           </motion.div>
         ) : currentStep ? (
           <motion.div
