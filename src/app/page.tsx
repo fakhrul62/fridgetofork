@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Clock3, Sparkles, Utensils } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
+import { IngredientWorkspace } from "@/components/kitchen/ingredient-workspace";
 
 const floatingIngredients = [
   { emoji: "🍅", label: "Tomato", className: "left-[8%] top-[21%] delay-0" },
@@ -61,7 +62,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <motion.a
-                href="#foundation"
+                href="#kitchen"
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.95 }}
                 className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[var(--color-terracotta)] px-7 font-semibold text-white shadow-[0_12px_30px_rgba(226,113,75,0.28),4px_4px_0_var(--color-warm-brown)]"
@@ -72,6 +73,9 @@ export default function Home() {
               <motion.button
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  document.getElementById("foundation")?.scrollIntoView({ behavior: "smooth" });
+                }}
                 className="h-14 rounded-full border border-[var(--color-warm-brown)]/25 bg-white/55 px-7 font-semibold text-[var(--color-warm-brown)] shadow-[4px_4px_0_rgba(61,43,31,0.12)] backdrop-blur"
               >
                 View Foundation
@@ -146,6 +150,8 @@ export default function Home() {
           </motion.div>
         ))}
       </section>
+
+      <IngredientWorkspace />
 
       <section id="foundation" className="relative z-10 px-5 pb-16 sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-3">
