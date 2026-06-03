@@ -16,7 +16,9 @@ Tagline: **Everything in its place. Everything in its time.**
 
 ## Phase Status
 
-Phase 1 is complete:
+Production URL: https://fridgetofork-omega.vercel.app
+
+Completed phases:
 
 - Project scaffolded with Next.js, TypeScript, Tailwind v4, ESLint, and pnpm
 - Brand tokens, typography, and global app styling added
@@ -25,6 +27,7 @@ Phase 1 is complete:
 - Lenis and GSAP ScrollTrigger registered globally
 - Custom animated cursor added
 - Branded animated app shell replacing starter boilerplate
+- Animated ingredient grid, cooking stage, recipe generation, playback system, Supabase data layer, auth, saved recipes, explore/detail pages, polish, and production deployment added
 
 ## Local Development
 
