@@ -1,15 +1,64 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChefHat, Sparkles, X } from "lucide-react";
+import { ChefHat, Clock3, Flame, Sparkles, X } from "lucide-react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { useKitchenStore } from "@/store/use-kitchen-store";
+import { useKitchenStore, type RecipeOption } from "@/store/use-kitchen-store";
+
+type GenerateRecipeResponse = {
+  recipes: RecipeOption[];
+  error?: string;
+};
 
 export function CookingStage() {
   const selectedIngredients = useKitchenStore((state) => state.selectedIngredients);
+  const recipeOptions = useKitchenStore((state) => state.recipeOptions);
+  const activeRecipe = useKitchenStore((state) => state.activeRecipe);
+  const stageStatus = useKitchenStore((state) => state.stageStatus);
   const deselectIngredient = useKitchenStore((state) => state.deselectIngredient);
+  const setRecipeOptions = useKitchenStore((state) => state.setRecipeOptions);
+  const setActiveRecipe = useKitchenStore((state) => state.setActiveRecipe);
+  const setStageStatus = useKitchenStore((state) => state.setStageStatus);
+  const [errorMessage, setErrorMessage] = useState("");
   const canGenerate = selectedIngredients.length >= 2;
+  const isGenerating = stageStatus === "suggesting";
+
+  const generateRecipes = async () => {
+    if (!canGenerate || isGenerating) {
+      return;
+    }
+
+    setErrorMessage("");
+    setStageStatus("suggesting");
+
+    try {
+      const response = await fetch("/api/generate-recipe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ingredients: selectedIngredients.map((ingredient) => ingredient.name),
+        }),
+      });
+      const payload = (await response.json()) as GenerateRecipeResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "The kitchen could not think of a dish yet.");
+      }
+
+      setRecipeOptions(payload.recipes);
+    } catch (error) {
+      setStageStatus("error");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "The kitchen could not think of a dish yet.",
+      );
+    }
+  };
 
   return (
     <section className="sticky top-5 overflow-hidden rounded-[2rem] border border-[var(--color-warm-brown)] bg-[var(--color-warm-brown)] p-4 shadow-[9px_9px_0_rgba(61,43,31,0.16)] lg:min-h-[760px]">
@@ -137,7 +186,8 @@ export function CookingStage() {
             type="button"
             whileHover={canGenerate ? { y: -3, scale: 1.015 } : undefined}
             whileTap={canGenerate ? { scale: 0.95 } : undefined}
-            disabled={!canGenerate}
+            disabled={!canGenerate || isGenerating}
+            onClick={generateRecipes}
             className={cn(
               "flex h-14 w-full items-center justify-center gap-3 rounded-full px-6 font-semibold shadow-[4px_4px_0_rgba(0,0,0,0.28)]",
               canGenerate
@@ -145,13 +195,115 @@ export function CookingStage() {
                 : "bg-white/10 text-white/42",
             )}
           >
-            {canGenerate ? <Sparkles className="size-5" /> : <ChefHat className="size-5" />}
-            What can I cook?
+            {isGenerating ? (
+              <span className="size-5 rounded-full bg-[var(--color-warm-brown)]/20 [animation:skeletonPulse_1s_ease-in-out_infinite]" />
+            ) : canGenerate ? (
+              <Sparkles className="size-5" />
+            ) : (
+              <ChefHat className="size-5" />
+            )}
+            {isGenerating ? "Thinking in threes..." : "What can I cook?"}
           </motion.button>
-          <p className="text-center text-sm leading-6 text-white/55">
-            Pick at least 2 ingredients. Recipe suggestions arrive in Phase 3.
-          </p>
+          <AnimatePresence mode="wait">
+            {errorMessage ? (
+              <motion.p
+                key="stage-error"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="rounded-2xl bg-[var(--color-terracotta)]/18 px-4 py-3 text-center text-sm leading-6 text-white"
+              >
+                {errorMessage}
+              </motion.p>
+            ) : (
+              <motion.p
+                key="stage-hint"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="text-center text-sm leading-6 text-white/55"
+              >
+                {activeRecipe
+                  ? `${activeRecipe.name} is loaded for the animation system.`
+                  : "Pick at least 2 ingredients for three dish ideas."}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
+
+        <AnimatePresence>
+          {(recipeOptions.length > 0 || isGenerating) && !activeRecipe ? (
+            <motion.div
+              initial={{ y: "105%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "105%", opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.22, duration: 0.68 }}
+              className="absolute inset-x-3 bottom-3 z-30 rounded-[1.5rem] border border-white/12 bg-[var(--color-cream)] p-4 text-[var(--color-warm-brown)] shadow-[0_-18px_50px_rgba(0,0,0,0.28)] sm:inset-x-4 sm:bottom-4"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-terracotta)]">
+                    Chef Suggestions
+                  </p>
+                  <h3 className="mt-1 font-display text-3xl font-semibold">Choose your dish</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRecipeOptions([])}
+                  className="grid size-9 place-items-center rounded-full bg-[var(--color-warm-brown)]/8"
+                  aria-label="Close suggestions"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                {isGenerating
+                  ? [0, 1, 2].map((item) => (
+                      <div
+                        key={item}
+                        className="h-28 rounded-3xl bg-[var(--color-warm-brown)]/8 [animation:skeletonPulse_1.1s_ease-in-out_infinite]"
+                      />
+                    ))
+                  : recipeOptions.map((recipe, index) => (
+                      <motion.button
+                        key={recipe.id}
+                        type="button"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.08, type: "spring", bounce: 0.3 }}
+                        whileHover={{ y: -3, scale: 1.01 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setActiveRecipe(recipe)}
+                        className="rounded-3xl border border-[var(--color-warm-brown)]/12 bg-white/70 p-4 text-left shadow-[3px_3px_0_rgba(61,43,31,0.1)]"
+                      >
+                        <span className="flex items-center justify-between gap-3">
+                          <span className="font-display text-2xl font-semibold leading-none">
+                            {recipe.name}
+                          </span>
+                          <span className="rounded-full bg-[var(--color-butter)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em]">
+                            {recipe.difficulty}
+                          </span>
+                        </span>
+                        <span className="mt-2 block text-sm leading-6 text-[var(--color-warm-brown)]/70">
+                          {recipe.description}
+                        </span>
+                        <span className="mt-3 flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-warm-brown)]/62">
+                          <span className="inline-flex items-center gap-1">
+                            <Clock3 className="size-3.5" />
+                            {recipe.cookTime} min
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Flame className="size-3.5" />
+                            {recipe.cuisine}
+                          </span>
+                        </span>
+                      </motion.button>
+                    ))}
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </section>
   );

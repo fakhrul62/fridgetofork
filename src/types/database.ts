@@ -59,6 +59,7 @@ export type Database = {
           category?: IngredientCategory;
           created_at?: string;
         };
+        Relationships: [];
       };
       recipes: {
         Row: {
@@ -94,6 +95,7 @@ export type Database = {
           cuisine?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       saved_recipes: {
         Row: {
@@ -114,6 +116,7 @@ export type Database = {
           recipe_id?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       cooking_sessions: {
         Row: {
@@ -137,6 +140,7 @@ export type Database = {
           completed?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
