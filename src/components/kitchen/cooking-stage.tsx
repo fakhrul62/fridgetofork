@@ -62,7 +62,11 @@ function getSavedPreferences() {
   }
 }
 
-export function CookingStage() {
+type CookingStageProps = {
+  isFocusMode?: boolean;
+};
+
+export function CookingStage({ isFocusMode = false }: CookingStageProps) {
   const selectedIngredients = useKitchenStore((state) => state.selectedIngredients);
   const recipeOptions = useKitchenStore((state) => state.recipeOptions);
   const activeRecipe = useKitchenStore((state) => state.activeRecipe);
@@ -127,8 +131,18 @@ export function CookingStage() {
   };
 
   return (
-    <section className="sticky top-5 overflow-hidden rounded-[2rem] border border-[var(--color-warm-brown)] bg-[var(--color-warm-brown)] p-4 shadow-[9px_9px_0_rgba(61,43,31,0.16)] lg:min-h-[760px]">
-      <div className="relative flex min-h-[620px] flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#2c1d15] p-5 text-[var(--color-cream)] sm:p-6">
+    <section
+      className={cn(
+        "overflow-hidden rounded-[2rem] border border-[var(--color-warm-brown)] bg-[var(--color-warm-brown)] p-4 shadow-[9px_9px_0_rgba(61,43,31,0.16)]",
+        isFocusMode ? "mx-auto w-full max-w-6xl" : "sticky top-5 lg:min-h-[760px]",
+      )}
+    >
+      <div
+        className={cn(
+          "relative flex flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#2c1d15] p-5 text-[var(--color-cream)] sm:p-6",
+          isFocusMode ? "min-h-[min(860px,calc(100vh-7rem))]" : "min-h-[620px]",
+        )}
+      >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(245,200,66,0.18),transparent_22rem)]" />
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/30 to-transparent" />
         <div className="pointer-events-none absolute inset-x-6 top-4 h-16 rounded-b-3xl border border-white/10 bg-white/[0.04]">
