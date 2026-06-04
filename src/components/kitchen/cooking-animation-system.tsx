@@ -318,7 +318,7 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
             exit={{ opacity: 0, y: -16 }}
             className="space-y-4"
           >
-            <div className="rounded-3xl bg-white/8 p-4">
+            <div className="max-h-[34svh] overflow-y-auto rounded-3xl bg-white/8 p-4 pr-3 sm:max-h-48">
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-butter)]">
                   Step {currentStep.step_number} / {stageCopy[currentStep.animation_type]}
@@ -326,7 +326,7 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
                 <h3 className="mt-1 font-display text-3xl font-semibold">
                   {currentStep.title}
                 </h3>
-                <p className="mt-2 max-w-lg text-sm leading-6 text-white/64">
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
                   {currentStep.action}
                 </p>
               </div>

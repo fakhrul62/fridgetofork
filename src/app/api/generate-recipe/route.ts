@@ -98,6 +98,8 @@ Return ONLY JSON. No markdown, no preamble.
 Make 3 different recipe ideas from these ingredients: ${ingredients.join(", ")}.
 Preferences: ${JSON.stringify(preferences ?? {})}.
 Avoid template names like "Skillet with Golden", "Rice Bowl", or "Midnight Kitchen Bake".
+Write for someone who cannot cook yet. Every step action must be very descriptive and specific: include heat level, pan/pot size when useful, how to prep the ingredient, what to listen/smell/look for, exact doneness cues, what to do immediately after the sub-step, and safety/handling details like rinsing noodles under cold water, reserving pasta water, patting shrimp dry, lowering heat before adding eggs, or resting food before cutting.
+Each action should be 45-80 words, practical, and written as one clear paragraph. Do not say vague things like "cook until done".
 Use this exact shape:
 {"recipes":[{"name":"specific dish","description":"one sentence","cook_time":25,"difficulty":"easy|medium|hard","cuisine":"specific style","match_score":88,"substitutions":["swap"],"taste_notes":["savory"],"shopping_list":["optional extra"],"nutrition":{"calories":520,"protein":30,"carbs":45,"fat":20},"steps":[{"step_number":1,"title":"short","action":"specific instruction","ingredient_involved":"ingredient","duration_seconds":20,"animation_type":"chop"}]}]}
 Each recipe needs exactly 4 steps. animation_type must be one of: ${animationTypes.join(", ")}.`;
@@ -154,9 +156,9 @@ const readGeminiText = async (prompt: string): Promise<string | null> => {
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-              responseMimeType: "application/json",
-              temperature: 0.8,
-              maxOutputTokens: 2048,
+            responseMimeType: "application/json",
+            temperature: 0.8,
+            maxOutputTokens: 4096,
             },
           }),
           signal: AbortSignal.timeout(18000),
@@ -373,7 +375,7 @@ const generateRecipeOptions = (
         {
           step_number: 1,
           title: `Prep the supporting ingredients`,
-          action: `Chop and organize ${prepTarget} so the crowded pantry lineup cooks evenly.`,
+          action: `Set a cutting board on a steady surface and place a damp towel underneath if it slides. Chop ${prepTarget} into small, even pieces so they cook at the same speed. Keep raw proteins separate from vegetables, wipe the board if juices spread, and line the prepared ingredients beside the stove before heating the pan.`,
           ingredient_involved: second,
           duration_seconds: 20,
           animation_type: "chop",
@@ -381,7 +383,7 @@ const generateRecipeOptions = (
         {
           step_number: 2,
           title: `Sear the ${first}`,
-          action: `Fry ${first} until the edges take on color and the kitchen smells ready.`,
+          action: `Warm a wide skillet over medium heat for 1 minute, then add a thin layer of oil or butter. Add ${first} in one layer so it sizzles instead of steams. Let it sit until the underside colors, then turn gently. If the pan smokes, lower the heat and wait 20 seconds before continuing.`,
           ingredient_involved: first,
           duration_seconds: 30,
           animation_type: "fry",
@@ -389,7 +391,7 @@ const generateRecipeOptions = (
         {
           step_number: 3,
           title: "Bring it together",
-          action: `Stir in ${finishingCast} until everything is coated, tender, and balanced.`,
+          action: `Add ${finishingCast} in the order of firmest to softest, stirring after each addition. Keep the heat at medium-low so nothing scorches. Scrape the browned bits from the bottom with a spoon, add a splash of water or stock if the pan looks dry, and cook until vegetables are tender but still bright.`,
           ingredient_involved: third,
           duration_seconds: 25,
           animation_type: "stir",
@@ -397,7 +399,7 @@ const generateRecipeOptions = (
         {
           step_number: 4,
           title: "Plate with a little drama",
-          action: "Slide the finished skillet onto a warm plate and finish with a glossy spoonful of sauce.",
+          action: "Turn off the heat before plating so the food does not overcook while you arrange it. Taste one small bite and add salt, lemon, or yogurt if it needs balance. Spoon the food onto a warm plate, keep sauce over the top instead of the rim, and let it rest for 1 minute before serving.",
           ingredient_involved: first,
           duration_seconds: 15,
           animation_type: "plate",
@@ -422,7 +424,7 @@ const generateRecipeOptions = (
         {
           step_number: 1,
           title: "Warm the base",
-          action: `Boil or steam the bowl base while ${second} gets ready on the board.`,
+          action: `Cook the grain, noodle, or bowl base first because it can wait while the toppings cook. If boiling noodles, stir during the first minute so they do not stick, taste one strand near the end, then drain and rinse briefly with warm water for saucy bowls or cold water for salad-style bowls.`,
           ingredient_involved: second,
           duration_seconds: 28,
           animation_type: "boil",
@@ -430,7 +432,7 @@ const generateRecipeOptions = (
         {
           step_number: 2,
           title: `Sizzle the ${first}`,
-          action: `Drop ${first} into the hot pan and let it sizzle until deeply savory.`,
+          action: `Pat ${first} dry if it is wet, because moisture stops browning. Heat a skillet over medium-high until a drop of water flickers, then add oil and ${first}. Spread it out, cook until the edges brown, then turn. If pieces stick, wait a little longer before moving them.`,
           ingredient_involved: first,
           duration_seconds: 32,
           animation_type: "fry",
@@ -438,7 +440,7 @@ const generateRecipeOptions = (
         {
           step_number: 3,
           title: "Rest and gloss",
-          action: `Let the cooked ingredients rest together so the flavors settle before plating.`,
+          action: `Move the cooked toppings to one side of the pan and lower the heat. Add a spoonful of sauce, yogurt, butter, or stock, then stir gently until everything looks lightly glossy. Let the mixture rest off the heat for 1 minute so juices settle and the sauce clings instead of running.`,
           ingredient_involved: third,
           duration_seconds: 20,
           animation_type: "rest",
@@ -446,7 +448,7 @@ const generateRecipeOptions = (
         {
           step_number: 4,
           title: "Build the bowl",
-          action: "Spoon the base into a bowl, tuck the toppings around it, and finish with a warm sauce.",
+          action: "Fluff the base with a fork before serving so it does not clump. Spoon it into the bowl first, then place the toppings in small sections so every bite has contrast. Add the sauce last, starting with less than you think, and keep extra on the side for adjusting.",
           ingredient_involved: second,
           duration_seconds: 16,
           animation_type: "plate",
@@ -471,7 +473,7 @@ const generateRecipeOptions = (
         {
           step_number: 1,
           title: "Chop the supporting cast",
-          action: `Cut ${second} and ${third} small so they melt into the bake.`,
+          action: `Cut ${second} and ${third} into small, similar pieces so they soften before the top browns. If either ingredient releases water, pat it dry with a towel first. Put everything in separate piles, preheat the oven if baking, and lightly grease the dish before adding the filling.`,
           ingredient_involved: second,
           duration_seconds: 24,
           animation_type: "chop",
@@ -479,7 +481,7 @@ const generateRecipeOptions = (
         {
           step_number: 2,
           title: "Stir the filling",
-          action: `Fold the selected ingredients together until the mixture looks glossy and even.`,
+          action: `Use a large bowl so you can mix without spilling. Add the heavier ingredients first, then fold in delicate ones with a spoon instead of smashing them. The filling should look evenly coated but not watery; if it seems loose, add breadcrumbs, cooked rice, or a spoon of yogurt to bind it.`,
           ingredient_involved: first,
           duration_seconds: 25,
           animation_type: "stir",
@@ -487,7 +489,7 @@ const generateRecipeOptions = (
         {
           step_number: 3,
           title: "Bake until bubbling",
-          action: "Slide the dish into the oven and bake until the top is golden and the middle is bubbling.",
+          action: "Place the dish on the middle oven rack so heat surrounds it evenly. Bake until the edges bubble and the top turns golden, then check the center with a spoon; it should be hot and thick, not runny. If the top browns too fast, cover loosely with foil and keep baking.",
           ingredient_involved: first,
           duration_seconds: 34,
           animation_type: "bake",
@@ -495,7 +497,7 @@ const generateRecipeOptions = (
         {
           step_number: 4,
           title: "Plate the first spoonful",
-          action: "Scoop generously and let the finished dish sparkle before serving.",
+          action: "Let the bake rest for 5 minutes before scooping, because the filling firms up as it cools slightly. Use a wide spoon to lift from the edge toward the center. Taste before serving and finish with lemon, herbs, yogurt, or oil if it needs freshness or shine.",
           ingredient_involved: first,
           duration_seconds: 15,
           animation_type: "plate",
