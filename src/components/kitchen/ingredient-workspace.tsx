@@ -124,15 +124,15 @@ export function IngredientWorkspace() {
       id="kitchen"
       className={cn(
         "relative z-10 px-5 sm:px-8 lg:px-12",
-        isCookingFocus ? "py-6 lg:py-10" : "py-16",
+        isCookingFocus ? "py-4 lg:py-5" : "py-4 lg:py-6",
       )}
     >
       <div
         className={cn(
-          "mx-auto max-w-7xl",
+          "mx-auto h-[calc(100svh-2rem)] max-w-7xl lg:h-[calc(100svh-3rem)]",
           isCookingFocus
             ? "flex justify-center"
-            : "lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)] lg:items-start lg:gap-6",
+            : "lg:grid lg:grid-cols-[minmax(0,1.02fr)_minmax(420px,0.98fr)] lg:items-stretch lg:gap-5",
         )}
       >
         {!isCookingFocus ? (
@@ -157,7 +157,7 @@ export function IngredientWorkspace() {
         {!isCookingFocus ? (
           <div
             className={cn(
-              "rounded-[2rem] border border-[var(--color-warm-brown)]/12 bg-white/42 p-4 shadow-[7px_7px_0_rgba(61,43,31,0.1)] backdrop-blur sm:p-6",
+              "flex h-[calc(100svh-7.5rem)] flex-col overflow-hidden rounded-[2rem] border border-[var(--color-warm-brown)]/12 bg-white/42 p-4 shadow-[7px_7px_0_rgba(61,43,31,0.1)] backdrop-blur sm:p-5 lg:h-full",
               mobileView === "stage" && "hidden lg:block",
             )}
           >
@@ -175,8 +175,8 @@ export function IngredientWorkspace() {
               </span>
             </div>
 
-            <div className="mt-6 grid gap-3">
-              <div className="grid gap-3 rounded-3xl border border-[var(--color-warm-brown)]/10 bg-white/45 p-4 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+            <div className="mt-4 grid shrink-0 gap-3">
+              <div className="grid gap-3 rounded-3xl border border-[var(--color-warm-brown)]/10 bg-white/45 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
                 <div>
                   <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-olive)]">
                     <CalendarDays className="size-4" />
@@ -254,7 +254,7 @@ export function IngredientWorkspace() {
               </div>
             </div>
 
-            <div className="mt-6 space-y-5">
+            <div className="mt-4 min-h-0 flex-1 space-y-5 overflow-y-auto pr-1">
               {groupedIngredients.map((group) => (
                 <section key={group.category}>
                   <div className="mb-3 flex items-center justify-between gap-3">
@@ -267,7 +267,7 @@ export function IngredientWorkspace() {
                   </div>
                   <motion.div
                     layout
-                    className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"
+                    className="grid grid-cols-2 gap-2 xl:grid-cols-3"
                   >
                     <AnimatePresence mode="popLayout">
                       {group.items.map((ingredient) => (

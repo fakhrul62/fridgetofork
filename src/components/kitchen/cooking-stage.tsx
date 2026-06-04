@@ -138,15 +138,12 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-[2rem] border border-[var(--color-warm-brown)] bg-[var(--color-warm-brown)] p-4 shadow-[9px_9px_0_rgba(61,43,31,0.16)]",
-        isFocusMode ? "mx-auto w-full max-w-5xl" : "sticky top-5 lg:min-h-[680px]",
+        "overflow-hidden rounded-[2rem] border border-[var(--color-warm-brown)] bg-[var(--color-warm-brown)] p-3 shadow-[9px_9px_0_rgba(61,43,31,0.16)] sm:p-4",
+        isFocusMode ? "mx-auto h-full w-full max-w-7xl" : "h-[calc(100svh-7.5rem)] lg:sticky lg:top-4 lg:h-full",
       )}
     >
       <div
-        className={cn(
-          "relative flex flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#2c1d15] p-5 text-[var(--color-cream)] sm:p-6",
-          isFocusMode ? "min-h-[min(680px,calc(100svh-4rem))]" : "min-h-[560px]",
-        )}
+        className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#2c1d15] p-4 text-[var(--color-cream)] sm:p-5"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(245,200,66,0.18),transparent_22rem)]" />
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/30 to-transparent" />
@@ -167,14 +164,14 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--color-butter)]">
                   Mise Stage
                 </p>
-                <h2 className="mt-2 font-display text-4xl font-semibold">Cooking Stage</h2>
+                <h2 className="mt-1 font-display text-3xl font-semibold">Cooking Stage</h2>
               </div>
               <span className="rounded-full bg-white/10 px-4 py-2 font-mono text-xs">
                 {selectedIngredients.length} picked
               </span>
             </div>
 
-            <div className="relative z-10 mt-6 flex flex-1 items-center justify-center">
+            <div className="relative z-10 mt-3 flex min-h-0 flex-1 items-center justify-center">
               <AnimatePresence mode="popLayout">
                 {selectedIngredients.length === 0 ? (
                   <motion.div
@@ -211,7 +208,7 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
                 ) : (
                   <motion.div
                     key="selected-stage"
-                    className="relative grid min-h-[300px] w-full max-w-xl place-items-center"
+                    className="relative grid min-h-[220px] w-full max-w-xl place-items-center"
                   >
                     <div className="absolute inset-x-8 bottom-8 h-20 rounded-[50%] bg-black/25 blur-xl" />
                     {selectedIngredients.slice(0, 14).map((ingredient, index) => {
@@ -294,12 +291,12 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
               </AnimatePresence>
             </div>
 
-            <div className="relative z-10 mt-6 space-y-4">
+            <div className="relative z-10 mt-3 shrink-0 space-y-3">
               {selectedIngredients.length > 0 ? (
                 <motion.div
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-3xl border border-white/10 bg-white/[0.06] p-4"
+                  className="rounded-3xl border border-white/10 bg-white/[0.06] p-3"
                 >
                   <div className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-butter)]">
                     <SlidersHorizontal className="size-4" />

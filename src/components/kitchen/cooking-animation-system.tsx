@@ -194,13 +194,13 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
   };
 
   return (
-    <div className="relative z-20 flex flex-1 flex-col">
+    <div className="relative z-20 flex h-full min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--color-butter)]">
             Now Cooking
           </p>
-          <h2 className="mt-1 font-display text-4xl font-semibold leading-none">
+          <h2 className="mt-1 truncate font-display text-2xl font-semibold leading-none sm:text-3xl">
             {recipe.name}
           </h2>
         </div>
@@ -231,14 +231,14 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
         </div>
       </div>
 
-      <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-3 h-2.5 shrink-0 overflow-hidden rounded-full bg-white/10">
         <motion.div
           className="h-full rounded-full bg-[var(--color-butter)]"
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.45, ease: "easeOut" }}
         />
       </div>
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+      <div className="mt-3 flex shrink-0 gap-2 overflow-x-auto pb-1">
         {recipe.steps.map((step, index) => (
           <span
             key={`${step.step_number}-${step.title}`}
@@ -256,118 +256,108 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
         ))}
       </div>
 
-      <div className="relative my-6 grid flex-1 place-items-center overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/12">
+      <div className="mt-3 grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(210px,0.9fr)] gap-3 lg:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.18fr)] lg:grid-rows-[minmax(0,1fr)]">
         <AnimatePresence mode="wait">
           {isComplete ? (
-            <CompleteStage key="complete" recipe={recipe} />
+            <motion.div
+              key="complete-layout"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              className="grid min-h-0 grid-rows-[minmax(0,0.9fr)_minmax(210px,1fr)] gap-3 lg:col-span-2 lg:grid-cols-[minmax(300px,0.78fr)_minmax(0,1.22fr)] lg:grid-rows-[minmax(0,1fr)]"
+            >
+              <div className="flex min-h-0 flex-col justify-center rounded-3xl bg-white/8 p-4">
+                <p className="font-display text-4xl font-semibold">Dish complete</p>
+                <p className="mt-2 text-sm leading-6 text-white/62">
+                  The plate is ready. Save it, replay it, or cook again with a new lineup.
+                </p>
+                <div className="mt-5 grid gap-2">
+                  <StageButton onClick={replay} icon={RotateCcw} label="Replay" />
+                  <StageButton onClick={cookAgain} icon={ChefHat} label="Cook Again" />
+                  <StageButton
+                    onClick={saveRecipe}
+                    icon={Bookmark}
+                    label={isSaving ? "Saving..." : "Save Recipe"}
+                    muted
+                  />
+                </div>
+                {saveMessage ? (
+                  <motion.p
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 text-center text-sm text-white/62"
+                  >
+                    {saveMessage}
+                  </motion.p>
+                ) : null}
+              </div>
+              <div className="relative grid min-h-0 place-items-center overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/12 p-4">
+                <CompleteStage recipe={recipe} />
+              </div>
+            </motion.div>
           ) : currentStep ? (
             <motion.div
               key={`${currentStep.step_number}-${runId}`}
-              initial={{ opacity: 0, y: 26, scale: 0.96 }}
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -26, scale: 0.96 }}
-              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="grid w-full place-items-center px-4 py-10"
+              exit={{ opacity: 0, y: -18, scale: 0.98 }}
+              transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+              className="contents"
             >
-              <AnimationScene step={currentStep} onInteract={interactWithStep} />
+              <div className="flex min-h-0 flex-col gap-3">
+                <div className="min-h-0 flex-1 overflow-y-auto rounded-3xl bg-white/8 p-4 pr-3">
+                  <p className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-butter)]">
+                    Step {currentStep.step_number} / {stageCopy[currentStep.animation_type]}
+                  </p>
+                  <h3 className="mt-1 font-display text-2xl font-semibold sm:text-3xl">
+                    {currentStep.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-7 text-white/74">
+                    {currentStep.action}
+                  </p>
+                </div>
+                <div className="shrink-0 rounded-3xl border border-white/10 bg-white/[0.06] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-white/62">
+                      <Hand className="size-4 text-[var(--color-butter)]" />
+                      Cook with it
+                    </span>
+                    <span className="font-mono text-xs text-[var(--color-butter)]">
+                      {interactionScore}%
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                    <motion.div
+                      className="h-full rounded-full bg-[var(--color-butter)]"
+                      animate={{ width: `${interactionScore}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="grid shrink-0 gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                  <StageButton
+                    onClick={goToPreviousStep}
+                    icon={MoveLeft}
+                    label="Previous"
+                    muted={stepIndex === 0}
+                    disabled={stepIndex === 0}
+                  />
+                  <div className="text-center font-mono text-xs uppercase tracking-[0.14em] text-white/50">
+                    Step {stepIndex + 1} of {recipe.steps.length}
+                  </div>
+                  <StageButton
+                    onClick={goToNextStep}
+                    icon={MoveRight}
+                    label={stepIndex === recipe.steps.length - 1 ? "Finish Dish" : "Next Step"}
+                  />
+                </div>
+              </div>
+              <div className="relative grid min-h-0 place-items-center overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/12 p-3">
+                <AnimationScene step={currentStep} onInteract={interactWithStep} />
+              </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
       </div>
-
-      <AnimatePresence mode="wait">
-        {isComplete ? (
-          <motion.div
-            key="complete-copy"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            className="space-y-4"
-          >
-            <div className="text-center">
-              <p className="font-display text-4xl font-semibold">Dish complete</p>
-              <p className="mt-2 text-sm leading-6 text-white/62">
-                The plate is ready. Save it, replay it, or cook again with a new lineup.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <StageButton onClick={replay} icon={RotateCcw} label="Replay" />
-              <StageButton onClick={cookAgain} icon={ChefHat} label="Cook Again" />
-              <StageButton
-                onClick={saveRecipe}
-                icon={Bookmark}
-                label={isSaving ? "Saving..." : "Save Recipe"}
-                muted
-              />
-            </div>
-            {saveMessage ? (
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center text-sm text-white/62"
-              >
-                {saveMessage}
-              </motion.p>
-            ) : null}
-          </motion.div>
-        ) : currentStep ? (
-          <motion.div
-            key={currentStep.step_number}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            className="space-y-4"
-          >
-            <div className="max-h-[34svh] overflow-y-auto rounded-3xl bg-white/8 p-4 pr-3 sm:max-h-48">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-butter)]">
-                  Step {currentStep.step_number} / {stageCopy[currentStep.animation_type]}
-                </p>
-                <h3 className="mt-1 font-display text-3xl font-semibold">
-                  {currentStep.title}
-                </h3>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-                  {currentStep.action}
-                </p>
-              </div>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-white/62">
-                  <Hand className="size-4 text-[var(--color-butter)]" />
-                  Cook with it
-                </span>
-                <span className="font-mono text-xs text-[var(--color-butter)]">
-                  {interactionScore}%
-                </span>
-              </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
-                <motion.div
-                  className="h-full rounded-full bg-[var(--color-butter)]"
-                  animate={{ width: `${interactionScore}%` }}
-                />
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-              <StageButton
-                onClick={goToPreviousStep}
-                icon={MoveLeft}
-                label="Previous"
-                muted={stepIndex === 0}
-                disabled={stepIndex === 0}
-              />
-              <div className="text-center font-mono text-xs uppercase tracking-[0.14em] text-white/50">
-                Step {stepIndex + 1} of {recipe.steps.length}
-              </div>
-              <StageButton
-                onClick={goToNextStep}
-                icon={MoveRight}
-                label={stepIndex === recipe.steps.length - 1 ? "Finish Dish" : "Next Step"}
-              />
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
     </div>
   );
 }
@@ -453,7 +443,7 @@ function AnimationScene({
   const ingredient = step.ingredient_involved;
 
   return (
-    <div className="relative grid min-h-80 w-full max-w-lg place-items-center overflow-hidden">
+    <div className="relative grid h-full min-h-0 w-full max-w-lg origin-center scale-[0.72] place-items-center overflow-hidden sm:scale-90 lg:scale-100">
       <div className="absolute inset-x-8 bottom-5 h-16 rounded-[50%] bg-black/20 blur-lg" />
       {step.animation_type === "chop" ? (
         <ChopScene ingredient={ingredient} onInteract={onInteract} />
