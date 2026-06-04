@@ -7,6 +7,15 @@ import type { Json, RecipeStep } from "@/types/database";
 
 const requestSchema = z.object({
   ingredients: z.array(z.string().min(1)).min(2).max(8),
+  preferences: z
+    .object({
+      mood: z.string().max(40).optional(),
+      timeLimit: z.number().int().min(10).max(90).optional(),
+      dietaryStyle: z.string().max(40).optional(),
+      spiceLevel: z.string().max(24).optional(),
+      avoid: z.string().max(120).optional(),
+    })
+    .optional(),
 });
 
 const stepSchema = z.object({
@@ -25,6 +34,9 @@ const recipeSchema = z.object({
   difficulty: z.enum(["easy", "medium", "hard"]),
   cuisine: z.string().min(1),
   steps: z.array(stepSchema).min(3).max(8),
+  match_score: z.number().int().min(0).max(100).optional(),
+  substitutions: z.array(z.string()).optional(),
+  taste_notes: z.array(z.string()).optional(),
 });
 
 const responseSchema = z.object({
@@ -48,6 +60,9 @@ NO backticks, NO preamble. Format:
       "cook_time": number,
       "difficulty": "easy" | "medium" | "hard",
       "cuisine": string,
+      "match_score": number,
+      "substitutions": string[],
+      "taste_notes": string[],
       "steps": [
         {
           "step_number": number,
@@ -63,17 +78,30 @@ NO backticks, NO preamble. Format:
 }
 Return exactly 3 dish options.`;
 
-const fallbackRecipes = (ingredients: string[]): GeneratedRecipe[] => {
+const fallbackRecipes = (
+  ingredients: string[],
+  preferences?: z.infer<typeof requestSchema>["preferences"],
+): GeneratedRecipe[] => {
   const [first, second, third = "butter"] = ingredients;
   const ingredientList = ingredients.join(", ");
+  const mood = preferences?.mood ?? "cozy";
+  const cuisineHint = preferences?.dietaryStyle ? `${preferences.dietaryStyle} comfort` : "Modern comfort";
+  const spiceNote =
+    preferences?.spiceLevel === "bold" ? "with a confident warm finish" : "with a balanced finish";
 
   return [
     {
       name: `${first} Skillet with Golden ${second}`,
-      description: `A cozy one-pan dinner where ${ingredientList} turns glossy, savory, and weeknight-friendly.`,
-      cook_time: 24,
+      description: `A ${mood} one-pan dinner where ${ingredientList} turns glossy, savory, and weeknight-friendly.`,
+      cook_time: Math.min(preferences?.timeLimit ?? 24, 32),
       difficulty: "easy",
-      cuisine: "Modern comfort",
+      cuisine: cuisineHint,
+      match_score: Math.min(98, 72 + ingredients.length * 4),
+      substitutions: [
+        `No ${third}? Use olive oil, yogurt, or a splash of stock.`,
+        `Need more body? Add rice, pasta, or toasted bread on the side.`,
+      ],
+      taste_notes: ["Glossy", "Savory", spiceNote],
       steps: [
         {
           step_number: 1,
@@ -112,9 +140,15 @@ const fallbackRecipes = (ingredients: string[]): GeneratedRecipe[] => {
     {
       name: `${second} Rice Bowl`,
       description: `A bright bowl built from ${ingredientList}, layered for crunch, steam, and comfort.`,
-      cook_time: 28,
+      cook_time: Math.min(preferences?.timeLimit ?? 28, 38),
       difficulty: "easy",
       cuisine: "Kitchen pantry",
+      match_score: Math.min(94, 68 + ingredients.length * 4),
+      substitutions: [
+        "No rice? Use noodles, bread, quinoa, or a tortilla.",
+        `No ${first}? Swap in tofu, eggs, shrimp, or mushrooms.`,
+      ],
+      taste_notes: ["Layered", "Steamy", "Flexible"],
       steps: [
         {
           step_number: 1,
@@ -153,9 +187,15 @@ const fallbackRecipes = (ingredients: string[]): GeneratedRecipe[] => {
     {
       name: `Midnight Kitchen ${first} Bake`,
       description: `A playful baked dish where ${ingredientList} gets cozy under a browned top.`,
-      cook_time: 36,
+      cook_time: Math.min(preferences?.timeLimit ?? 36, 45),
       difficulty: "medium",
       cuisine: "Casual bistro",
+      match_score: Math.min(90, 62 + ingredients.length * 4),
+      substitutions: [
+        "No oven time? Finish it covered in a skillet.",
+        "No dairy? Use olive oil, coconut milk, or a spoon of tahini.",
+      ],
+      taste_notes: ["Bubbly", "Toasty", "Comforting"],
       steps: [
         {
           step_number: 1,
@@ -269,8 +309,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const { ingredients } = parsedRequest.data;
-  let recipes = fallbackRecipes(ingredients);
+  const { ingredients, preferences } = parsedRequest.data;
+  let recipes = fallbackRecipes(ingredients, preferences);
 
   if (process.env.ANTHROPIC_API_KEY) {
     try {
@@ -283,7 +323,9 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "user",
-            content: `Selected ingredients: ${ingredients.join(", ")}`,
+            content: `Selected ingredients: ${ingredients.join(", ")}
+Preferences: ${JSON.stringify(preferences ?? {})}
+Prioritize recipes that use as many selected ingredients as possible. Include match_score, substitutions, and taste_notes.`,
           },
         ],
       });
@@ -291,7 +333,7 @@ export async function POST(request: Request) {
       const payload = normalizeClaudePayload(extractClaudeText(message));
       recipes = payload.recipes;
     } catch {
-      recipes = fallbackRecipes(ingredients);
+      recipes = fallbackRecipes(ingredients, preferences);
     }
   }
 
@@ -307,6 +349,9 @@ export async function POST(request: Request) {
       cookTime: recipe.cook_time,
       difficulty: recipe.difficulty,
       cuisine: recipe.cuisine,
+      matchScore: recipe.match_score ?? Math.min(96, 70 + recipe.ingredients.length * 4),
+      substitutions: recipe.substitutions ?? [],
+      tasteNotes: recipe.taste_notes ?? [],
     })),
   });
 }

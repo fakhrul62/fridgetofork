@@ -64,6 +64,31 @@ export default async function RecipePage({ params }: RecipePageProps) {
               </div>
             </section>
 
+            {(recipe.tasteNotes?.length || recipe.substitutions?.length) ? (
+              <section className="rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/54 p-5 shadow-[4px_4px_0_rgba(61,43,31,0.1)]">
+                <h2 className="font-display text-3xl font-semibold">Chef notes</h2>
+                {recipe.tasteNotes?.length ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {recipe.tasteNotes.map((note) => (
+                      <span
+                        key={note}
+                        className="rounded-full bg-[var(--color-butter)]/55 px-3 py-2 font-mono text-xs uppercase tracking-[0.1em]"
+                      >
+                        {note}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {recipe.substitutions?.length ? (
+                  <ul className="mt-4 space-y-2 text-[var(--color-warm-brown)]/70">
+                    {recipe.substitutions.map((substitution) => (
+                      <li key={substitution}>Smart swap: {substitution}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </section>
+            ) : null}
+
             <section className="rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/54 p-5 shadow-[4px_4px_0_rgba(61,43,31,0.1)]">
               <h2 className="font-display text-3xl font-semibold">Steps</h2>
               <ol className="mt-4 space-y-4">

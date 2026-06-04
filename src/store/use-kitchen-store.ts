@@ -23,6 +23,9 @@ export type RecipeOption = {
   cookTime: number;
   difficulty: Difficulty;
   cuisine: string;
+  matchScore?: number;
+  substitutions?: string[];
+  tasteNotes?: string[];
 };
 
 export type CookingStageStatus =

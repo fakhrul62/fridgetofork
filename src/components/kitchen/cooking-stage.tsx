@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChefHat, Clock3, Flame, Sparkles, X } from "lucide-react";
+import { ChefHat, Clock3, Flame, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
 import { CookingAnimationSystem } from "@/components/kitchen/cooking-animation-system";
@@ -13,6 +13,10 @@ type GenerateRecipeResponse = {
   error?: string;
 };
 
+const moods = ["cozy", "spicy", "light", "fancy", "lazy"] as const;
+const timeLimits = [20, 30, 45] as const;
+const dietaryStyles = ["anything", "vegetarian", "high protein", "budget"] as const;
+
 export function CookingStage() {
   const selectedIngredients = useKitchenStore((state) => state.selectedIngredients);
   const recipeOptions = useKitchenStore((state) => state.recipeOptions);
@@ -23,6 +27,12 @@ export function CookingStage() {
   const setActiveRecipe = useKitchenStore((state) => state.setActiveRecipe);
   const setStageStatus = useKitchenStore((state) => state.setStageStatus);
   const [errorMessage, setErrorMessage] = useState("");
+  const [mood, setMood] = useState<(typeof moods)[number]>("cozy");
+  const [timeLimit, setTimeLimit] = useState<(typeof timeLimits)[number]>(30);
+  const [dietaryStyle, setDietaryStyle] =
+    useState<(typeof dietaryStyles)[number]>("anything");
+  const [spiceLevel, setSpiceLevel] = useState<"gentle" | "bold">("gentle");
+  const [avoid, setAvoid] = useState("");
   const canGenerate = selectedIngredients.length >= 2;
   const isGenerating = stageStatus === "suggesting";
 
@@ -42,6 +52,13 @@ export function CookingStage() {
         },
         body: JSON.stringify({
           ingredients: selectedIngredients.map((ingredient) => ingredient.name),
+          preferences: {
+            mood,
+            timeLimit,
+            dietaryStyle,
+            spiceLevel,
+            avoid,
+          },
         }),
       });
       const payload = (await response.json()) as GenerateRecipeResponse;
@@ -190,6 +207,68 @@ export function CookingStage() {
             </div>
 
             <div className="relative z-10 mt-6 space-y-4">
+              {selectedIngredients.length > 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-3xl border border-white/10 bg-white/[0.06] p-4"
+                >
+                  <div className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-butter)]">
+                    <SlidersHorizontal className="size-4" />
+                    Recipe mood
+                  </div>
+                  <PreferenceRow label="Mood">
+                    {moods.map((item) => (
+                      <PreferenceChip
+                        key={item}
+                        active={mood === item}
+                        onClick={() => setMood(item)}
+                      >
+                        {item}
+                      </PreferenceChip>
+                    ))}
+                  </PreferenceRow>
+                  <PreferenceRow label="Time">
+                    {timeLimits.map((item) => (
+                      <PreferenceChip
+                        key={item}
+                        active={timeLimit === item}
+                        onClick={() => setTimeLimit(item)}
+                      >
+                        {item}m
+                      </PreferenceChip>
+                    ))}
+                  </PreferenceRow>
+                  <PreferenceRow label="Style">
+                    {dietaryStyles.map((item) => (
+                      <PreferenceChip
+                        key={item}
+                        active={dietaryStyle === item}
+                        onClick={() => setDietaryStyle(item)}
+                      >
+                        {item}
+                      </PreferenceChip>
+                    ))}
+                  </PreferenceRow>
+                  <PreferenceRow label="Heat">
+                    {(["gentle", "bold"] as const).map((item) => (
+                      <PreferenceChip
+                        key={item}
+                        active={spiceLevel === item}
+                        onClick={() => setSpiceLevel(item)}
+                      >
+                        {item}
+                      </PreferenceChip>
+                    ))}
+                  </PreferenceRow>
+                  <input
+                    value={avoid}
+                    onChange={(event) => setAvoid(event.target.value)}
+                    placeholder="Avoid anything? e.g. dairy, spicy, onion"
+                    className="mt-3 h-11 w-full rounded-full border border-white/10 bg-white/10 px-4 text-sm text-white outline-none placeholder:text-white/42 focus:border-[var(--color-butter)]"
+                  />
+                </motion.div>
+              ) : null}
               <motion.button
                 type="button"
                 whileHover={canGenerate ? { y: -3, scale: 1.015 } : undefined}
@@ -297,6 +376,11 @@ export function CookingStage() {
                           {recipe.description}
                         </span>
                         <span className="mt-3 flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-warm-brown)]/62">
+                          {typeof recipe.matchScore === "number" ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-olive)]/14 px-2 py-1 text-[var(--color-olive)]">
+                              Uses {recipe.matchScore}%
+                            </span>
+                          ) : null}
                           <span className="inline-flex items-center gap-1">
                             <Clock3 className="size-3.5" />
                             {recipe.cookTime} min
@@ -306,6 +390,11 @@ export function CookingStage() {
                             {recipe.cuisine}
                           </span>
                         </span>
+                        {recipe.substitutions?.length ? (
+                          <span className="mt-3 block rounded-2xl bg-[var(--color-butter)]/25 px-3 py-2 text-xs leading-5 text-[var(--color-warm-brown)]/72">
+                            Smart swap: {recipe.substitutions[0]}
+                          </span>
+                        ) : null}
                       </motion.button>
                     ))}
               </div>
@@ -314,5 +403,49 @@ export function CookingStage() {
         </AnimatePresence>
       </div>
     </section>
+  );
+}
+
+function PreferenceRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+      <span className="w-14 shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
+        {label}
+      </span>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function PreferenceChip({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <motion.button
+      type="button"
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.94 }}
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em]",
+        active
+          ? "border-[var(--color-butter)] bg-[var(--color-butter)] text-[var(--color-warm-brown)]"
+          : "border-white/10 bg-white/8 text-white/62",
+      )}
+    >
+      {children}
+    </motion.button>
   );
 }

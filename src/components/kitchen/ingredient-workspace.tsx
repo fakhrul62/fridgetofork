@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, X } from "lucide-react";
+import { CalendarDays, Refrigerator, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useEffect } from "react";
 
@@ -23,6 +23,7 @@ export function IngredientWorkspace() {
   const maxIngredients = useKitchenStore((state) => state.maxIngredients);
   const selectIngredient = useKitchenStore((state) => state.selectIngredient);
   const deselectIngredient = useKitchenStore((state) => state.deselectIngredient);
+  const clearIngredients = useKitchenStore((state) => state.clearIngredients);
 
   const selectedIds = useMemo(
     () => new Set(selectedIngredients.map((ingredient) => ingredient.id)),
@@ -78,6 +79,26 @@ export function IngredientWorkspace() {
   };
 
   const selectionIsFull = selectedIngredients.length >= maxIngredients;
+  const savePantry = () => {
+    window.localStorage.setItem("fridge-to-fork-pantry", JSON.stringify(selectedIngredients));
+  };
+  const loadPantry = () => {
+    const savedPantry = window.localStorage.getItem("fridge-to-fork-pantry");
+
+    if (!savedPantry) {
+      return;
+    }
+
+    const parsed = JSON.parse(savedPantry) as Ingredient[];
+    clearIngredients();
+    parsed.slice(0, maxIngredients).forEach((ingredient) => selectIngredient(ingredient));
+  };
+  const dailyChallenge = availableIngredients
+    .slice()
+    .sort((first, second) => first.id.localeCompare(second.id))
+    .filter((_, index) => [2, 7, 12, 20].includes(index))
+    .map((ingredient) => ingredient.name)
+    .join(" + ");
 
   return (
     <section id="kitchen" className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
@@ -98,6 +119,37 @@ export function IngredientWorkspace() {
           </div>
 
           <div className="mt-6 grid gap-3">
+            <div className="grid gap-3 rounded-3xl border border-[var(--color-warm-brown)]/10 bg-white/45 p-4 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+              <div>
+                <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-olive)]">
+                  <CalendarDays className="size-4" />
+                  Daily fridge challenge
+                </p>
+                <p className="mt-2 font-display text-2xl font-semibold leading-none">
+                  {dailyChallenge}
+                </p>
+              </div>
+              <motion.button
+                type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.94 }}
+                onClick={savePantry}
+                disabled={selectedIngredients.length === 0}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--color-butter)] px-4 font-semibold text-[var(--color-warm-brown)] disabled:opacity-45"
+              >
+                <Refrigerator className="size-4" />
+                Save Pantry
+              </motion.button>
+              <motion.button
+                type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.94 }}
+                onClick={loadPantry}
+                className="h-11 rounded-full border border-[var(--color-warm-brown)]/15 bg-white/70 px-4 font-semibold text-[var(--color-warm-brown)]"
+              >
+                Load Pantry
+              </motion.button>
+            </div>
             <label className="relative block">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[var(--color-warm-brown)]/45" />
               <input
