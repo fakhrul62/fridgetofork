@@ -36,4 +36,10 @@ corepack pnpm install
 corepack pnpm dev
 ```
 
-Create `.env.local` from `.env.example` and fill the required Supabase and AI keys before using data or recipe-generation features.
+Create `.env.local` and fill the required Supabase values before using data features.
+
+Recipe generation tries real AI first, then falls back gracefully if every provider is unavailable. Free-key options:
+
+- `GEMINI_API_KEY` with optional `GEMINI_MODEL=gemini-2.5-flash`
+- `GROQ_API_KEY` with optional `GROQ_MODEL=llama-3.1-8b-instant`
+- `POLLINATIONS_API_KEY` optional; without it, the app tries Pollinations anonymous text generation as a best-effort fallback

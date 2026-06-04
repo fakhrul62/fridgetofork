@@ -11,6 +11,7 @@ import { useKitchenStore, type RecipeOption } from "@/store/use-kitchen-store";
 
 type GenerateRecipeResponse = {
   recipes: RecipeOption[];
+  generationSource?: "gemini" | "groq" | "pollinations" | "local";
   error?: string;
 };
 
@@ -85,6 +86,8 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
   const [spiceLevel, setSpiceLevel] =
     useState<"gentle" | "bold">(savedPreferences.spiceLevel);
   const [avoid, setAvoid] = useState(savedPreferences.avoid);
+  const [generationSource, setGenerationSource] =
+    useState<GenerateRecipeResponse["generationSource"]>();
   const canGenerate = selectedIngredients.length >= 2;
   const isGenerating = stageStatus === "suggesting";
 
@@ -94,6 +97,7 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
     }
 
     setErrorMessage("");
+    setGenerationSource(undefined);
     setStageStatus("suggesting");
 
     try {
@@ -119,6 +123,7 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
         throw new Error(payload.error ?? "The kitchen could not think of a dish yet.");
       }
 
+      setGenerationSource(payload.generationSource ?? "local");
       setRecipeOptions(payload.recipes);
     } catch (error) {
       setStageStatus("error");
@@ -413,7 +418,7 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-terracotta)]">
-                    Chef Suggestions
+                    {generationSource === "local" ? "House Suggestions" : "AI Chef Suggestions"}
                   </p>
                   <h3 className="mt-1 font-display text-3xl font-semibold">Choose your dish</h3>
                 </div>

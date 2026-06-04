@@ -17,6 +17,40 @@ const requestSchema = z.object({
     .optional(),
 });
 
+const aiStepSchema = z.object({
+  step_number: z.number().int().positive(),
+  title: z.string().min(1),
+  action: z.string().min(1),
+  ingredient_involved: z.string().min(1),
+  duration_seconds: z.number().int().min(5).max(900),
+  animation_type: z.enum(["chop", "fry", "boil", "stir", "bake", "plate", "rest"]),
+});
+
+const aiRecipeSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(1),
+  cook_time: z.number().int().min(1).max(240),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  cuisine: z.string().min(1),
+  steps: z.array(aiStepSchema).min(3).max(8),
+  match_score: z.number().int().min(0).max(100).optional(),
+  substitutions: z.array(z.string()).optional(),
+  taste_notes: z.array(z.string()).optional(),
+  shopping_list: z.array(z.string()).optional(),
+  nutrition: z
+    .object({
+      calories: z.number().int().min(0),
+      protein: z.number().int().min(0),
+      carbs: z.number().int().min(0),
+      fat: z.number().int().min(0),
+    })
+    .optional(),
+});
+
+const aiResponseSchema = z.object({
+  recipes: z.array(aiRecipeSchema).length(3),
+});
+
 type GeneratedRecipe = {
   name: string;
   description: string;
@@ -48,12 +82,245 @@ type SavedGeneratedRecipe = Omit<
   nutrition?: Json | null;
 };
 
+const animationTypes = ["chop", "fry", "boil", "stir", "bake", "plate", "rest"] as const;
+
+const buildAiPrompt = (
+  ingredients: string[],
+  preferences?: z.infer<typeof requestSchema>["preferences"],
+) => `You are a professional chef and recipe writer for an animated cooking web app.
+Return ONLY a valid JSON object. No markdown. No backticks. No preamble.
+Use the selected ingredients creatively. Do not use fixed template names like "Skillet with Golden", "Rice Bowl", or "Midnight Kitchen Bake".
+Create 3 genuinely different dish options with different cuisines, techniques, names, and animation steps.
+Use as many selected ingredients as make culinary sense. It is okay to ignore ingredients that clash.
+
+Selected ingredients: ${ingredients.join(", ")}
+Preferences: ${JSON.stringify(preferences ?? {})}
+
+JSON format:
+{
+  "recipes": [
+    {
+      "name": "specific dish name",
+      "description": "one evocative sentence",
+      "cook_time": 25,
+      "difficulty": "easy",
+      "cuisine": "specific cuisine or style",
+      "match_score": 88,
+      "substitutions": ["short smart swap", "short smart swap"],
+      "taste_notes": ["bright", "savory", "crisp"],
+      "shopping_list": ["optional extra", "optional extra"],
+      "nutrition": { "calories": 520, "protein": 30, "carbs": 45, "fat": 20 },
+      "steps": [
+        {
+          "step_number": 1,
+          "title": "short title",
+          "action": "specific cooking instruction",
+          "ingredient_involved": "one selected ingredient",
+          "duration_seconds": 20,
+          "animation_type": "chop"
+        }
+      ]
+    }
+  ]
+}
+Every recipe must have 4-6 steps. animation_type must be one of: ${animationTypes.join(", ")}.`;
+
+const extractJsonObject = (text: string) => {
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    throw new Error("AI did not return JSON.");
+  }
+
+  return text.slice(firstBrace, lastBrace + 1);
+};
+
+type AiGenerationResult = {
+  recipes: GeneratedRecipe[];
+  provider: "gemini" | "groq" | "pollinations";
+};
+
+const parseAiRecipeText = (text: string): GeneratedRecipe[] => {
+  const parsed = JSON.parse(extractJsonObject(text)) as unknown;
+  const payload = aiResponseSchema.parse(parsed);
+
+  return payload.recipes;
+};
+
+const readGeminiText = async (prompt: string): Promise<string | null> => {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.95,
+          maxOutputTokens: 4096,
+        },
+      }),
+      signal: AbortSignal.timeout(25000),
+    },
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as {
+    candidates?: Array<{
+      content?: {
+        parts?: Array<{ text?: string }>;
+      };
+    }>;
+  };
+
+  return payload.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text ?? "")
+    .join("")
+    .trim() || null;
+};
+
+const readGroqText = async (prompt: string): Promise<string | null> => {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  const model = process.env.GROQ_MODEL ?? "llama-3.1-8b-instant";
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.9,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: "You return valid JSON only.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(25000),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as {
+    choices?: Array<{
+      message?: {
+        content?: string;
+      };
+    }>;
+  };
+
+  return payload.choices?.[0]?.message?.content?.trim() || null;
+};
+
+const readPollinationsText = async (prompt: string): Promise<string | null> => {
+  const encodedPrompt = encodeURIComponent(prompt);
+  const pollinationsKey = process.env.POLLINATIONS_API_KEY;
+  const endpoint = pollinationsKey
+    ? `https://gen.pollinations.ai/text/${encodedPrompt}?key=${encodeURIComponent(pollinationsKey)}`
+    : `https://text.pollinations.ai/${encodedPrompt}`;
+  const response = await fetch(endpoint, {
+    headers: {
+      Accept: "text/plain, application/json",
+    },
+    signal: AbortSignal.timeout(25000),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return response.text();
+};
+
+const generateAiRecipes = async (
+  ingredients: string[],
+  preferences?: z.infer<typeof requestSchema>["preferences"],
+): Promise<AiGenerationResult | null> => {
+  const prompt = buildAiPrompt(ingredients, preferences);
+
+  const providers = [
+    { name: "gemini" as const, read: readGeminiText },
+    { name: "groq" as const, read: readGroqText },
+    { name: "pollinations" as const, read: readPollinationsText },
+  ];
+
+  for (const provider of providers) {
+    try {
+      const text = await provider.read(prompt);
+
+      if (!text) {
+        continue;
+      }
+
+      return {
+        provider: provider.name,
+        recipes: parseAiRecipeText(text),
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+};
+
 const generateRecipeOptions = (
   ingredients: string[],
   preferences?: z.infer<typeof requestSchema>["preferences"],
 ): GeneratedRecipe[] => {
   const selected = [...new Set(ingredients.map((ingredient) => ingredient.trim()).filter(Boolean))];
   const [first, second, third = "butter"] = selected;
+  const seed = selected.join("|").split("").reduce((total, character) => total + character.charCodeAt(0), 0);
+  const styleNames = [
+    "Taverna",
+    "Sunday Market",
+    "Clay Pot",
+    "Charred Garden",
+    "Butter-Lit",
+    "Hearthside",
+  ];
+  const techniqueNames = [
+    "Braise",
+    "Toss",
+    "Crisp",
+    "Supper",
+    "Sizzle",
+    "Roast",
+  ];
+  const styleName = styleNames[seed % styleNames.length];
+  const secondStyleName = styleNames[(seed + 2) % styleNames.length];
+  const thirdStyleName = styleNames[(seed + 4) % styleNames.length];
+  const techniqueName = techniqueNames[(seed + selected.length) % techniqueNames.length];
+  const secondTechniqueName = techniqueNames[(seed + selected.length + 2) % techniqueNames.length];
+  const thirdTechniqueName = techniqueNames[(seed + selected.length + 4) % techniqueNames.length];
   const featuredIngredients = selected.slice(0, 8);
   const extraCount = Math.max(0, selected.length - featuredIngredients.length);
   const ingredientList =
@@ -70,7 +337,7 @@ const generateRecipeOptions = (
 
   return [
     {
-      name: `${first} Skillet with Golden ${second}`,
+      name: `${styleName} ${first} and ${second} ${techniqueName}`,
       description: `A ${mood} one-pan dinner built around ${ingredientList}, finished glossy, savory, and weeknight-friendly.`,
       cook_time: Math.min(preferences?.timeLimit ?? 24, 32),
       difficulty: "easy",
@@ -119,7 +386,7 @@ const generateRecipeOptions = (
       ],
     },
     {
-      name: `${second} Rice Bowl`,
+      name: `${secondStyleName} ${second} Pantry ${secondTechniqueName}`,
       description: `A bright bowl using ${ingredientList}, layered for crunch, steam, and comfort.`,
       cook_time: Math.min(preferences?.timeLimit ?? 28, 38),
       difficulty: "easy",
@@ -168,7 +435,7 @@ const generateRecipeOptions = (
       ],
     },
     {
-      name: `Midnight Kitchen ${first} Bake`,
+      name: `${thirdStyleName} ${first} ${thirdTechniqueName}`,
       description: `A playful baked dish with ${ingredientList}, tucked under a browned top.`,
       cook_time: Math.min(preferences?.timeLimit ?? 36, 45),
       difficulty: "medium",
@@ -289,10 +556,12 @@ export async function POST(request: Request) {
   }
 
   const { ingredients, preferences } = parsedRequest.data;
-  const recipes = generateRecipeOptions(ingredients, preferences);
+  const aiRecipes = await generateAiRecipes(ingredients, preferences);
+  const recipes = aiRecipes?.recipes ?? generateRecipeOptions(ingredients, preferences);
   const savedRecipes = await saveRecipes(recipes, ingredients);
 
   return NextResponse.json({
+    generationSource: aiRecipes?.provider ?? "local",
     recipes: savedRecipes.map((recipe) => ({
       id: recipe.id,
       name: recipe.name,
