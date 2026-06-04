@@ -308,7 +308,7 @@ export function IngredientWorkspace() {
         </div>
       </div>
       {!isCookingFocus ? (
-        <div className="fixed inset-x-4 bottom-4 z-40 flex items-center justify-between rounded-full border border-[var(--color-warm-brown)]/12 bg-[var(--color-warm-brown)] px-4 py-3 text-[var(--color-cream)] shadow-[0_12px_40px_rgba(61,43,31,0.24)] lg:hidden">
+        <div className="absolute inset-x-4 bottom-4 z-20 flex items-center justify-between rounded-full border border-[var(--color-warm-brown)]/12 bg-[var(--color-warm-brown)] px-4 py-3 text-[var(--color-cream)] shadow-[0_12px_40px_rgba(61,43,31,0.24)] lg:hidden">
           <span className="font-mono text-xs uppercase tracking-[0.12em]">
             {selectedIngredients.length} picked
           </span>

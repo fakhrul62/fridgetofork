@@ -309,13 +309,12 @@ export default function Home() {
               Explore all
             </Link>
           </div>
-          <div className="mt-8 columns-1 gap-4 md:columns-2 xl:columns-3">
-            {featuredRecipes.map((recipe, index) => (
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {featuredRecipes.map((recipe) => (
               <Link
                 key={recipe.id}
                 href={`/recipe/${recipe.id}`}
-                className="scroll-card mb-4 block break-inside-avoid rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/58 p-5 opacity-0 shadow-[4px_4px_0_rgba(61,43,31,0.1)]"
-                style={{ minHeight: `${260 + index * 34}px` }}
+                className="scroll-card group flex min-h-72 flex-col rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/58 p-5 opacity-0 shadow-[4px_4px_0_rgba(61,43,31,0.1)]"
               >
                 <p className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--color-olive)]">
                   {recipe.cuisine} · {recipe.cookTime} min
@@ -323,9 +322,12 @@ export default function Home() {
                 <h3 className="mt-5 font-display text-4xl font-semibold leading-none">
                   {recipe.name}
                 </h3>
-                <p className="mt-4 leading-7 text-[var(--color-warm-brown)]/68">
+                <p className="mt-4 flex-1 leading-7 text-[var(--color-warm-brown)]/68">
                   {recipe.description}
                 </p>
+                <span className="mt-6 inline-flex h-11 w-fit items-center justify-center rounded-full bg-[var(--color-butter)] px-4 font-semibold text-[var(--color-warm-brown)] shadow-[3px_3px_0_rgba(61,43,31,0.14)] transition-transform group-hover:-translate-y-1">
+                  Cook this
+                </span>
               </Link>
             ))}
           </div>
