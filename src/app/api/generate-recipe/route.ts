@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json, RecipeStep } from "@/types/database";
 
 const requestSchema = z.object({
-  ingredients: z.array(z.string().min(1)).min(2).max(8),
+  ingredients: z.array(z.string().min(1)).min(2).max(100),
   preferences: z
     .object({
       mood: z.string().max(40).optional(),
@@ -52,21 +52,30 @@ const generateRecipeOptions = (
   ingredients: string[],
   preferences?: z.infer<typeof requestSchema>["preferences"],
 ): GeneratedRecipe[] => {
-  const [first, second, third = "butter"] = ingredients;
-  const ingredientList = ingredients.join(", ");
+  const selected = [...new Set(ingredients.map((ingredient) => ingredient.trim()).filter(Boolean))];
+  const [first, second, third = "butter"] = selected;
+  const featuredIngredients = selected.slice(0, 8);
+  const extraCount = Math.max(0, selected.length - featuredIngredients.length);
+  const ingredientList =
+    extraCount > 0
+      ? `${featuredIngredients.join(", ")} and ${extraCount} more`
+      : featuredIngredients.join(", ");
   const mood = preferences?.mood ?? "cozy";
   const cuisineHint = preferences?.dietaryStyle ? `${preferences.dietaryStyle} comfort` : "Modern comfort";
   const spiceNote =
     preferences?.spiceLevel === "bold" ? "with a confident warm finish" : "with a balanced finish";
+  const matchScore = Math.min(98, 68 + Math.min(selected.length, 8) * 4);
+  const prepTarget = featuredIngredients.slice(1, 4).join(", ") || second;
+  const finishingCast = featuredIngredients.slice(0, 6).join(", ");
 
   return [
     {
       name: `${first} Skillet with Golden ${second}`,
-      description: `A ${mood} one-pan dinner where ${ingredientList} turns glossy, savory, and weeknight-friendly.`,
+      description: `A ${mood} one-pan dinner built around ${ingredientList}, finished glossy, savory, and weeknight-friendly.`,
       cook_time: Math.min(preferences?.timeLimit ?? 24, 32),
       difficulty: "easy",
       cuisine: cuisineHint,
-      match_score: Math.min(98, 72 + ingredients.length * 4),
+      match_score: matchScore,
       substitutions: [
         `No ${third}? Use olive oil, yogurt, or a splash of stock.`,
         `Need more body? Add rice, pasta, or toasted bread on the side.`,
@@ -77,8 +86,8 @@ const generateRecipeOptions = (
       steps: [
         {
           step_number: 1,
-          title: `Prep the ${second}`,
-          action: `Chop ${second} into bite-size pieces and keep it close to the pan.`,
+          title: `Prep the supporting ingredients`,
+          action: `Chop and organize ${prepTarget} so the crowded pantry lineup cooks evenly.`,
           ingredient_involved: second,
           duration_seconds: 20,
           animation_type: "chop",
@@ -94,7 +103,7 @@ const generateRecipeOptions = (
         {
           step_number: 3,
           title: "Bring it together",
-          action: `Stir in ${ingredientList} until everything is coated and tender.`,
+          action: `Stir in ${finishingCast} until everything is coated, tender, and balanced.`,
           ingredient_involved: third,
           duration_seconds: 25,
           animation_type: "stir",
@@ -111,11 +120,11 @@ const generateRecipeOptions = (
     },
     {
       name: `${second} Rice Bowl`,
-      description: `A bright bowl built from ${ingredientList}, layered for crunch, steam, and comfort.`,
+      description: `A bright bowl using ${ingredientList}, layered for crunch, steam, and comfort.`,
       cook_time: Math.min(preferences?.timeLimit ?? 28, 38),
       difficulty: "easy",
       cuisine: "Kitchen pantry",
-      match_score: Math.min(94, 68 + ingredients.length * 4),
+      match_score: Math.min(94, matchScore - 2),
       substitutions: [
         "No rice? Use noodles, bread, quinoa, or a tortilla.",
         `No ${first}? Swap in tofu, eggs, shrimp, or mushrooms.`,
@@ -143,7 +152,7 @@ const generateRecipeOptions = (
         {
           step_number: 3,
           title: "Rest and gloss",
-          action: `Let ${ingredientList} rest together so the flavors settle before plating.`,
+          action: `Let the cooked ingredients rest together so the flavors settle before plating.`,
           ingredient_involved: third,
           duration_seconds: 20,
           animation_type: "rest",
@@ -160,11 +169,11 @@ const generateRecipeOptions = (
     },
     {
       name: `Midnight Kitchen ${first} Bake`,
-      description: `A playful baked dish where ${ingredientList} gets cozy under a browned top.`,
+      description: `A playful baked dish with ${ingredientList}, tucked under a browned top.`,
       cook_time: Math.min(preferences?.timeLimit ?? 36, 45),
       difficulty: "medium",
       cuisine: "Casual bistro",
-      match_score: Math.min(90, 62 + ingredients.length * 4),
+      match_score: Math.min(90, matchScore - 6),
       substitutions: [
         "No oven time? Finish it covered in a skillet.",
         "No dairy? Use olive oil, coconut milk, or a spoon of tahini.",
@@ -184,7 +193,7 @@ const generateRecipeOptions = (
         {
           step_number: 2,
           title: "Stir the filling",
-          action: `Fold ${ingredientList} together until the mixture looks glossy and even.`,
+          action: `Fold the selected ingredients together until the mixture looks glossy and even.`,
           ingredient_involved: first,
           duration_seconds: 25,
           animation_type: "stir",
@@ -274,7 +283,7 @@ export async function POST(request: Request) {
 
   if (!parsedRequest.success) {
     return NextResponse.json(
-      { error: "Choose between 2 and 8 ingredients first." },
+      { error: "Choose at least 2 ingredients first." },
       { status: 400 },
     );
   }

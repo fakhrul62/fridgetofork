@@ -134,13 +134,13 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
     <section
       className={cn(
         "overflow-hidden rounded-[2rem] border border-[var(--color-warm-brown)] bg-[var(--color-warm-brown)] p-4 shadow-[9px_9px_0_rgba(61,43,31,0.16)]",
-        isFocusMode ? "mx-auto w-full max-w-6xl" : "sticky top-5 lg:min-h-[760px]",
+        isFocusMode ? "mx-auto w-full max-w-5xl" : "sticky top-5 lg:min-h-[680px]",
       )}
     >
       <div
         className={cn(
           "relative flex flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#2c1d15] p-5 text-[var(--color-cream)] sm:p-6",
-          isFocusMode ? "min-h-[min(860px,calc(100vh-7rem))]" : "min-h-[620px]",
+          isFocusMode ? "min-h-[min(680px,calc(100svh-4rem))]" : "min-h-[560px]",
         )}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(245,200,66,0.18),transparent_22rem)]" />
@@ -165,7 +165,7 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
                 <h2 className="mt-2 font-display text-4xl font-semibold">Cooking Stage</h2>
               </div>
               <span className="rounded-full bg-white/10 px-4 py-2 font-mono text-xs">
-                {selectedIngredients.length}/8
+                {selectedIngredients.length} picked
               </span>
             </div>
 
@@ -206,15 +206,17 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
                 ) : (
                   <motion.div
                     key="selected-stage"
-                    className="relative grid h-[390px] w-full max-w-xl place-items-center"
+                    className="relative grid min-h-[300px] w-full max-w-xl place-items-center"
                   >
                     <div className="absolute inset-x-8 bottom-8 h-20 rounded-[50%] bg-black/25 blur-xl" />
-                    {selectedIngredients.map((ingredient, index) => {
+                    {selectedIngredients.slice(0, 14).map((ingredient, index) => {
                       const angle =
-                        (index / Math.max(selectedIngredients.length, 1)) * Math.PI * 2;
-                      const radius = selectedIngredients.length > 4 ? 132 : 104;
+                        (index / Math.max(Math.min(selectedIngredients.length, 14), 1)) *
+                        Math.PI *
+                        2;
+                      const radius = selectedIngredients.length > 8 ? 118 : 96;
                       const x = Math.cos(angle) * radius;
-                      const y = Math.sin(angle) * 88;
+                      const y = Math.sin(angle) * 72;
 
                       return (
                         <motion.div
@@ -252,7 +254,7 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
                               repeat: Infinity,
                               ease: "easeInOut",
                             }}
-                            className="group relative grid min-w-28 place-items-center rounded-3xl border border-white/15 bg-white/92 p-4 text-[var(--color-warm-brown)] shadow-[5px_8px_0_rgba(0,0,0,0.22)]"
+                            className="group relative grid min-w-20 place-items-center rounded-2xl border border-white/15 bg-white/92 p-3 text-[var(--color-warm-brown)] shadow-[4px_6px_0_rgba(0,0,0,0.2)]"
                           >
                             <button
                               type="button"
@@ -266,16 +268,22 @@ export function CookingStage({ isFocusMode = false }: CookingStageProps) {
                               <IngredientIllustration
                                 name={ingredient.name}
                                 category={ingredient.category}
-                                size="md"
+                                size="sm"
+                                className="size-12"
                               />
                             </motion.span>
-                            <span className="mt-2 font-mono text-xs uppercase tracking-[0.12em]">
+                            <span className="mt-1 max-w-20 truncate font-mono text-[10px] uppercase tracking-[0.1em]">
                               {ingredient.name}
                             </span>
                           </motion.div>
                         </motion.div>
                       );
                     })}
+                    {selectedIngredients.length > 14 ? (
+                      <div className="absolute bottom-3 rounded-full bg-[var(--color-butter)] px-4 py-2 font-mono text-xs uppercase tracking-[0.12em] text-[var(--color-warm-brown)] shadow-[3px_3px_0_rgba(0,0,0,0.2)]">
+                        +{selectedIngredients.length - 14} more in recipe
+                      </div>
+                    ) : null}
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -31,7 +31,7 @@ const foundationCards = [
 
 const heroHeadline = "What's in your kitchen?";
 const howItWorks = [
-  ["Pick", "Choose up to 8 ingredients from your fridge, pantry, or wishful thinking."],
+  ["Pick", "Choose whatever is in your fridge, pantry, or wishful thinking."],
   ["Generate", "Get three chef-style ideas shaped around what you already have."],
   ["Cook", "Watch the animated stage chop, sizzle, stir, bake, and plate."],
 ];

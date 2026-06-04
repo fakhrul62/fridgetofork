@@ -11,14 +11,12 @@ import type { Ingredient } from "@/store/use-kitchen-store";
 type IngredientCardProps = {
   ingredient: Ingredient;
   isSelected: boolean;
-  isDisabled: boolean;
   onToggle: (ingredient: Ingredient) => void;
 };
 
 export function IngredientCard({
   ingredient,
   isSelected,
-  isDisabled,
   onToggle,
 }: IngredientCardProps) {
   return (
@@ -31,14 +29,12 @@ export function IngredientCard({
       whileTap={{ scale: 0.92 }}
       transition={{ type: "spring", bounce: 0.38, duration: 0.58 }}
       onClick={() => onToggle(ingredient)}
-      disabled={isDisabled && !isSelected}
       data-cursor="hover"
       className={cn(
-        "group relative flex min-h-36 flex-col justify-between rounded-3xl border p-4 text-left text-[var(--color-warm-brown)] shadow-[4px_4px_0_rgba(61,43,31,0.1)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]",
+        "group relative flex min-h-24 items-center gap-3 rounded-2xl border p-3 text-left text-[var(--color-warm-brown)] shadow-[3px_3px_0_rgba(61,43,31,0.08)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]",
         "bg-white/68 border-[var(--color-warm-brown)]/12 backdrop-blur",
         isSelected &&
           "border-[var(--color-terracotta)] bg-[#fff2e7] shadow-[0_0_0_3px_rgba(226,113,75,0.14),5px_5px_0_rgba(226,113,75,0.28)]",
-        isDisabled && !isSelected && "cursor-not-allowed opacity-45",
       )}
     >
       <span
@@ -57,16 +53,17 @@ export function IngredientCard({
         <IngredientIllustration
           name={ingredient.name}
           category={ingredient.category}
-          size="md"
+          size="sm"
+          className="size-14"
         />
       </motion.span>
-      <span className="space-y-3">
-        <span className="block font-display text-2xl font-semibold leading-none text-[var(--color-warm-brown)]">
+      <span className="min-w-0 space-y-2">
+        <span className="block truncate font-display text-xl font-semibold leading-none text-[var(--color-warm-brown)]">
           {ingredient.name}
         </span>
         <span
           className={cn(
-            "inline-flex rounded-full border px-3 py-1 font-mono text-[11px] uppercase tracking-[0.12em]",
+            "inline-flex rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]",
             categoryStyles[ingredient.category],
           )}
         >

@@ -23,7 +23,6 @@ export function IngredientWorkspace() {
   const selectedIngredients = useKitchenStore((state) => state.selectedIngredients);
   const activeRecipe = useKitchenStore((state) => state.activeRecipe);
   const stageStatus = useKitchenStore((state) => state.stageStatus);
-  const maxIngredients = useKitchenStore((state) => state.maxIngredients);
   const selectIngredient = useKitchenStore((state) => state.selectIngredient);
   const deselectIngredient = useKitchenStore((state) => state.deselectIngredient);
   const clearIngredients = useKitchenStore((state) => state.clearIngredients);
@@ -81,9 +80,19 @@ export function IngredientWorkspace() {
     selectIngredient(ingredient);
   };
 
-  const selectionIsFull = selectedIngredients.length >= maxIngredients;
   const isCookingFocus =
     Boolean(activeRecipe) && (stageStatus === "cooking" || stageStatus === "complete");
+
+  const groupedIngredients = useMemo(
+    () =>
+      categories
+        .map((category) => ({
+          category,
+          items: filteredIngredients.filter((ingredient) => ingredient.category === category),
+        }))
+        .filter((group) => group.items.length > 0),
+    [filteredIngredients],
+  );
 
   const savePantry = () => {
     window.localStorage.setItem("fridge-to-fork-pantry", JSON.stringify(selectedIngredients));
@@ -98,7 +107,7 @@ export function IngredientWorkspace() {
     try {
       const parsed = JSON.parse(savedPantry) as Ingredient[];
       clearIngredients();
-      parsed.slice(0, maxIngredients).forEach((ingredient) => selectIngredient(ingredient));
+      parsed.forEach((ingredient) => selectIngredient(ingredient));
     } catch {
       window.localStorage.removeItem("fridge-to-fork-pantry");
     }
@@ -162,7 +171,7 @@ export function IngredientWorkspace() {
                 </h2>
               </div>
               <span className="w-fit rounded-full bg-[var(--color-warm-brown)] px-4 py-2 font-mono text-xs uppercase tracking-[0.14em] text-[var(--color-cream)]">
-                {selectedIngredients.length}/{maxIngredients} selected
+                {selectedIngredients.length} selected
               </span>
             </div>
 
@@ -245,19 +254,35 @@ export function IngredientWorkspace() {
               </div>
             </div>
 
-            <motion.div layout className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-              <AnimatePresence mode="popLayout">
-                {filteredIngredients.map((ingredient) => (
-                  <IngredientCard
-                    key={ingredient.id}
-                    ingredient={ingredient}
-                    isSelected={selectedIds.has(ingredient.id)}
-                    isDisabled={selectionIsFull}
-                    onToggle={toggleIngredient}
-                  />
-                ))}
-              </AnimatePresence>
-            </motion.div>
+            <div className="mt-6 space-y-5">
+              {groupedIngredients.map((group) => (
+                <section key={group.category}>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h3 className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-olive)]">
+                      {categoryLabels[group.category]}
+                    </h3>
+                    <span className="rounded-full bg-white/65 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--color-warm-brown)]/55">
+                      {group.items.length}
+                    </span>
+                  </div>
+                  <motion.div
+                    layout
+                    className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"
+                  >
+                    <AnimatePresence mode="popLayout">
+                      {group.items.map((ingredient) => (
+                        <IngredientCard
+                          key={ingredient.id}
+                          ingredient={ingredient}
+                          isSelected={selectedIds.has(ingredient.id)}
+                          onToggle={toggleIngredient}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
+                </section>
+              ))}
+            </div>
 
             {filteredIngredients.length === 0 ? (
               <motion.div

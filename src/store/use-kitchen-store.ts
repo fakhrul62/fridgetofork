@@ -55,7 +55,6 @@ type KitchenState = {
   activeRecipe: RecipeOption | null;
   stageStatus: CookingStageStatus;
   currentStep: CookingStepState;
-  maxIngredients: number;
   selectIngredient: (ingredient: Ingredient) => void;
   deselectIngredient: (ingredientId: string) => void;
   clearIngredients: () => void;
@@ -78,14 +77,13 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
   activeRecipe: null,
   stageStatus: "idle",
   currentStep: initialStep,
-  maxIngredients: 8,
   selectIngredient: (ingredient) => {
-    const { selectedIngredients, maxIngredients } = get();
+    const { selectedIngredients } = get();
     const alreadySelected = selectedIngredients.some(
       (item) => item.id === ingredient.id,
     );
 
-    if (alreadySelected || selectedIngredients.length >= maxIngredients) {
+    if (alreadySelected) {
       return;
     }
 
