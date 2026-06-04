@@ -18,37 +18,43 @@ const requestSchema = z.object({
 });
 
 const aiStepSchema = z.object({
-  step_number: z.number().int().positive(),
+  step_number: z.coerce.number().int().positive(),
   title: z.string().min(1),
   action: z.string().min(1),
   ingredient_involved: z.string().min(1),
-  duration_seconds: z.number().int().min(5).max(900),
-  animation_type: z.enum(["chop", "fry", "boil", "stir", "bake", "plate", "rest"]),
+  duration_seconds: z.coerce.number().int().min(5).max(900),
+  animation_type: z.preprocess(
+    (value) => (typeof value === "string" ? value.toLowerCase().trim() : value),
+    z.enum(["chop", "fry", "boil", "stir", "bake", "plate", "rest"]),
+  ),
 });
 
 const aiRecipeSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
-  cook_time: z.number().int().min(1).max(240),
-  difficulty: z.enum(["easy", "medium", "hard"]),
+  cook_time: z.coerce.number().int().min(1).max(240),
+  difficulty: z.preprocess(
+    (value) => (typeof value === "string" ? value.toLowerCase().trim() : value),
+    z.enum(["easy", "medium", "hard"]),
+  ),
   cuisine: z.string().min(1),
   steps: z.array(aiStepSchema).min(3).max(8),
-  match_score: z.number().int().min(0).max(100).optional(),
+  match_score: z.coerce.number().int().min(0).max(100).optional(),
   substitutions: z.array(z.string()).optional(),
   taste_notes: z.array(z.string()).optional(),
   shopping_list: z.array(z.string()).optional(),
   nutrition: z
     .object({
-      calories: z.number().int().min(0),
-      protein: z.number().int().min(0),
-      carbs: z.number().int().min(0),
-      fat: z.number().int().min(0),
+      calories: z.coerce.number().int().min(0),
+      protein: z.coerce.number().int().min(0),
+      carbs: z.coerce.number().int().min(0),
+      fat: z.coerce.number().int().min(0),
     })
     .optional(),
 });
 
 const aiResponseSchema = z.object({
-  recipes: z.array(aiRecipeSchema).length(3),
+  recipes: z.array(aiRecipeSchema).min(1),
 });
 
 type GeneratedRecipe = {
@@ -88,42 +94,13 @@ const buildAiPrompt = (
   ingredients: string[],
   preferences?: z.infer<typeof requestSchema>["preferences"],
 ) => `You are a professional chef and recipe writer for an animated cooking web app.
-Return ONLY a valid JSON object. No markdown. No backticks. No preamble.
-Use the selected ingredients creatively. Do not use fixed template names like "Skillet with Golden", "Rice Bowl", or "Midnight Kitchen Bake".
-Create 3 genuinely different dish options with different cuisines, techniques, names, and animation steps.
-Use as many selected ingredients as make culinary sense. It is okay to ignore ingredients that clash.
-
-Selected ingredients: ${ingredients.join(", ")}
-Preferences: ${JSON.stringify(preferences ?? {})}
-
-JSON format:
-{
-  "recipes": [
-    {
-      "name": "specific dish name",
-      "description": "one evocative sentence",
-      "cook_time": 25,
-      "difficulty": "easy",
-      "cuisine": "specific cuisine or style",
-      "match_score": 88,
-      "substitutions": ["short smart swap", "short smart swap"],
-      "taste_notes": ["bright", "savory", "crisp"],
-      "shopping_list": ["optional extra", "optional extra"],
-      "nutrition": { "calories": 520, "protein": 30, "carbs": 45, "fat": 20 },
-      "steps": [
-        {
-          "step_number": 1,
-          "title": "short title",
-          "action": "specific cooking instruction",
-          "ingredient_involved": "one selected ingredient",
-          "duration_seconds": 20,
-          "animation_type": "chop"
-        }
-      ]
-    }
-  ]
-}
-Every recipe must have 4-6 steps. animation_type must be one of: ${animationTypes.join(", ")}.`;
+Return ONLY JSON. No markdown, no preamble.
+Make 3 different recipe ideas from these ingredients: ${ingredients.join(", ")}.
+Preferences: ${JSON.stringify(preferences ?? {})}.
+Avoid template names like "Skillet with Golden", "Rice Bowl", or "Midnight Kitchen Bake".
+Use this exact shape:
+{"recipes":[{"name":"specific dish","description":"one sentence","cook_time":25,"difficulty":"easy|medium|hard","cuisine":"specific style","match_score":88,"substitutions":["swap"],"taste_notes":["savory"],"shopping_list":["optional extra"],"nutrition":{"calories":520,"protein":30,"carbs":45,"fat":20},"steps":[{"step_number":1,"title":"short","action":"specific instruction","ingredient_involved":"ingredient","duration_seconds":20,"animation_type":"chop"}]}]}
+Each recipe needs exactly 4 steps. animation_type must be one of: ${animationTypes.join(", ")}.`;
 
 const extractJsonObject = (text: string) => {
   const firstBrace = text.indexOf("{");
@@ -155,42 +132,71 @@ const readGeminiText = async (prompt: string): Promise<string | null> => {
     return null;
   }
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.95,
-          maxOutputTokens: 4096,
-        },
-      }),
-      signal: AbortSignal.timeout(25000),
-    },
-  );
+  const models = [
+    process.env.GEMINI_MODEL,
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+  ].filter((model, index, list): model is string => Boolean(model) && list.indexOf(model) === index);
 
-  if (!response.ok) {
-    return null;
+  for (const model of models) {
+    let response: Response;
+
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.8,
+              maxOutputTokens: 2048,
+            },
+          }),
+          signal: AbortSignal.timeout(18000),
+        },
+      );
+    } catch (error) {
+      console.warn(
+        `Gemini recipe generation timed out model=${model} message=${
+          error instanceof Error ? error.message : "Unknown fetch error"
+        }`,
+      );
+      continue;
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.warn(
+        `Gemini recipe generation failed model=${model} status=${response.status} statusText=${response.statusText} detail=${errorText.slice(0, 180)}`,
+      );
+      continue;
+    }
+
+    const payload = (await response.json()) as {
+      candidates?: Array<{
+        content?: {
+          parts?: Array<{ text?: string }>;
+        };
+      }>;
+    };
+    const text = payload.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text ?? "")
+      .join("")
+      .trim();
+
+    if (text) {
+      return text;
+    }
   }
 
-  const payload = (await response.json()) as {
-    candidates?: Array<{
-      content?: {
-        parts?: Array<{ text?: string }>;
-      };
-    }>;
-  };
-
-  return payload.candidates?.[0]?.content?.parts
-    ?.map((part) => part.text ?? "")
-    .join("")
-    .trim() || null;
+  return null;
 };
 
 const readGroqText = async (prompt: string): Promise<string | null> => {
@@ -222,10 +228,13 @@ const readGroqText = async (prompt: string): Promise<string | null> => {
         },
       ],
     }),
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(18000),
   });
 
   if (!response.ok) {
+    console.warn(
+      `Groq recipe generation failed status=${response.status} statusText=${response.statusText}`,
+    );
     return null;
   }
 
@@ -250,10 +259,13 @@ const readPollinationsText = async (prompt: string): Promise<string | null> => {
     headers: {
       Accept: "text/plain, application/json",
     },
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(12000),
   });
 
   if (!response.ok) {
+    console.warn(
+      `Pollinations recipe generation failed status=${response.status} statusText=${response.statusText}`,
+    );
     return null;
   }
 
@@ -269,7 +281,9 @@ const generateAiRecipes = async (
   const providers = [
     { name: "gemini" as const, read: readGeminiText },
     { name: "groq" as const, read: readGroqText },
-    { name: "pollinations" as const, read: readPollinationsText },
+    ...(!process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY
+      ? [{ name: "pollinations" as const, read: readPollinationsText }]
+      : []),
   ];
 
   for (const provider of providers) {
@@ -284,7 +298,12 @@ const generateAiRecipes = async (
         provider: provider.name,
         recipes: parseAiRecipeText(text),
       };
-    } catch {
+    } catch (error) {
+      console.warn(
+        `${provider.name} recipe generation could not be used: ${
+          error instanceof Error ? error.message : "Unknown provider error"
+        }`,
+      );
       continue;
     }
   }
