@@ -33,7 +33,7 @@ export function IngredientCard({
       disabled={isDisabled && !isSelected}
       data-cursor="hover"
       className={cn(
-        "group relative flex min-h-36 flex-col justify-between rounded-3xl border p-4 text-left shadow-[4px_4px_0_rgba(61,43,31,0.1)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]",
+        "group relative flex min-h-36 flex-col justify-between rounded-3xl border p-4 text-left text-[var(--color-warm-brown)] shadow-[4px_4px_0_rgba(61,43,31,0.1)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]",
         "bg-white/68 border-[var(--color-warm-brown)]/12 backdrop-blur",
         isSelected &&
           "border-[var(--color-terracotta)] bg-[#fff2e7] shadow-[0_0_0_3px_rgba(226,113,75,0.14),5px_5px_0_rgba(226,113,75,0.28)]",

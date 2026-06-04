@@ -13,8 +13,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: var(--color-charcoal);
-    --foreground: var(--color-cream);
+    --background: var(--color-cream);
+    --foreground: var(--color-warm-brown);
   }
 }
 
@@ -50,9 +50,9 @@ body {
 @media (prefers-color-scheme: dark) {
   body {
     background:
-      radial-gradient(circle at 20% 14%, rgba(226, 113, 75, 0.2), transparent 23rem),
-      radial-gradient(circle at 85% 8%, rgba(245, 200, 66, 0.12), transparent 20rem),
-      linear-gradient(135deg, #1c1c1c, #261a13);
+      radial-gradient(circle at 16% 20%, rgba(245, 200, 66, 0.18), transparent 22rem),
+      radial-gradient(circle at 88% 4%, rgba(226, 113, 75, 0.14), transparent 20rem),
+      linear-gradient(135deg, rgba(255, 248, 240, 0.98), rgba(255, 238, 219, 0.9));
   }
 }
 
@@ -203,5 +203,66 @@ button {
 
   to {
     transform: rotate(360deg) translateX(18px) rotate(-360deg);
+  }
+}
+
+@keyframes knifeChop {
+  0%,
+  100% {
+    transform: translateY(-58px) rotate(-18deg);
+  }
+
+  50% {
+    transform: translateY(10px) rotate(7deg);
+  }
+}
+
+@keyframes panToss {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+
+  45% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+@keyframes oilShine {
+  0%,
+  100% {
+    transform: translateX(-18px) scaleX(0.8);
+    opacity: 0.28;
+  }
+
+  50% {
+    transform: translateX(22px) scaleX(1.15);
+    opacity: 0.7;
+  }
+}
+
+@keyframes potLidRattle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  25% {
+    transform: translateY(-4px) rotate(-2deg);
+  }
+
+  70% {
+    transform: translateY(-2px) rotate(2deg);
+  }
+}
+
+@keyframes ovenGlow {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.85;
   }
 }

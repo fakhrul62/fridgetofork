@@ -9,9 +9,10 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { ingredients } from "@/data/ingredients";
 import { cn } from "@/lib/utils";
 import { useKitchenStore, type RecipeOption } from "@/store/use-kitchen-store";
 import type { AnimationType, RecipeStep } from "@/types/database";
@@ -271,7 +272,7 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
             <div className="flex items-center justify-between gap-4 rounded-3xl bg-white/8 p-4">
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-butter)]">
-                Step {currentStep.step_number} · {stageCopy[currentStep.animation_type]}
+                  Step {currentStep.step_number} / {stageCopy[currentStep.animation_type]}
                 </p>
                 <h3 className="mt-1 font-display text-3xl font-semibold">
                   {currentStep.title}
@@ -321,167 +322,276 @@ function StageButton({ icon: Icon, label, muted = false, onClick }: StageButtonP
 
 function AnimationScene({ step }: { step: RecipeStep }) {
   const ingredient = step.ingredient_involved;
+  const emoji = getIngredientEmoji(ingredient);
 
   return (
-    <div className="relative grid min-h-72 w-full max-w-md place-items-center">
-      {step.animation_type === "chop" ? <ChopScene ingredient={ingredient} /> : null}
-      {step.animation_type === "fry" ? <FryScene ingredient={ingredient} /> : null}
-      {step.animation_type === "boil" ? <BoilScene ingredient={ingredient} /> : null}
-      {step.animation_type === "stir" ? <StirScene ingredient={ingredient} /> : null}
-      {step.animation_type === "bake" ? <BakeScene ingredient={ingredient} /> : null}
-      {step.animation_type === "plate" ? <PlateScene ingredient={ingredient} /> : null}
-      {step.animation_type === "rest" ? <RestScene ingredient={ingredient} /> : null}
+    <div className="relative grid min-h-80 w-full max-w-lg place-items-center overflow-hidden">
+      <div className="absolute inset-x-8 bottom-5 h-16 rounded-[50%] bg-black/20 blur-lg" />
+      {step.animation_type === "chop" ? (
+        <ChopScene emoji={emoji} ingredient={ingredient} />
+      ) : null}
+      {step.animation_type === "fry" ? (
+        <FryScene emoji={emoji} ingredient={ingredient} />
+      ) : null}
+      {step.animation_type === "boil" ? (
+        <BoilScene emoji={emoji} ingredient={ingredient} />
+      ) : null}
+      {step.animation_type === "stir" ? (
+        <StirScene emoji={emoji} ingredient={ingredient} />
+      ) : null}
+      {step.animation_type === "bake" ? (
+        <BakeScene emoji={emoji} ingredient={ingredient} />
+      ) : null}
+      {step.animation_type === "plate" ? (
+        <PlateScene emoji={emoji} ingredient={ingredient} />
+      ) : null}
+      {step.animation_type === "rest" ? (
+        <RestScene emoji={emoji} ingredient={ingredient} />
+      ) : null}
     </div>
   );
 }
 
-function IngredientToken({ label }: { label: string }) {
+function getIngredientEmoji(label: string) {
+  const normalizedLabel = label.toLowerCase();
+  const exactMatch = ingredients.find(
+    (ingredient) => ingredient.name.toLowerCase() === normalizedLabel,
+  );
+  const partialMatch = ingredients.find(
+    (ingredient) =>
+      normalizedLabel.includes(ingredient.name.toLowerCase()) ||
+      ingredient.name.toLowerCase().includes(normalizedLabel),
+  );
+
+  return exactMatch?.emoji ?? partialMatch?.emoji ?? "🥘";
+}
+
+function IngredientPiece({
+  emoji,
+  label,
+  delay = 0,
+  small = false,
+}: {
+  emoji: string;
+  label?: string;
+  delay?: number;
+  small?: boolean;
+}) {
   return (
     <motion.div
-      animate={{ y: [0, -8, 0], rotate: [-2, 2, -2] }}
-      transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-      className="rounded-3xl border border-[var(--color-warm-brown)]/10 bg-white px-5 py-4 text-center text-[var(--color-warm-brown)] shadow-[5px_7px_0_rgba(0,0,0,0.2)]"
+      animate={{ y: [0, -6, 0], rotate: [-3, 4, -3] }}
+      transition={{ duration: 1.6, delay, repeat: Infinity, ease: "easeInOut" }}
+      className={cn(
+        "grid place-items-center rounded-2xl border border-[var(--color-warm-brown)]/12 bg-white text-[var(--color-warm-brown)] shadow-[4px_5px_0_rgba(0,0,0,0.18)]",
+        small ? "size-12 text-2xl" : "min-w-24 px-4 py-3 text-4xl",
+      )}
     >
-      <span className="font-display text-2xl font-semibold">{label}</span>
+      <span>{emoji}</span>
+      {label ? (
+        <span className="mt-1 max-w-24 text-center font-mono text-[10px] uppercase tracking-[0.1em]">
+          {label}
+        </span>
+      ) : null}
     </motion.div>
   );
 }
 
-function ChopScene({ ingredient }: { ingredient: string }) {
+function StageLabel({ children }: { children: ReactNode }) {
   return (
-    <>
-      <motion.div
-        animate={{ y: [-70, 16, -70], rotate: [-18, 12, -18] }}
-        transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-4 h-20 w-8 rounded-b-xl rounded-t-sm bg-[var(--color-butter)] shadow-[0_8px_0_rgba(0,0,0,0.2)]"
-      />
-      <div className="absolute bottom-12 h-16 w-64 rounded-[50%] bg-[var(--color-butter)]/35" />
-      <div className="flex gap-3">
-        {[0, 1, 2].map((item) => (
-          <motion.span
-            key={item}
-            animate={{ y: [0, -18, 0], x: [0, item * 10 - 10, 0] }}
-            transition={{ duration: 0.75, delay: item * 0.1, repeat: Infinity }}
-            className="h-16 w-20 rounded-3xl bg-[var(--color-terracotta)] shadow-[4px_6px_0_rgba(0,0,0,0.2)]"
-          />
-        ))}
-      </div>
-      <p className="absolute bottom-2 font-mono text-xs uppercase tracking-[0.18em] text-white/54">
-        {ingredient}
-      </p>
-    </>
+    <p className="mt-5 rounded-full bg-white/12 px-4 py-2 text-center font-mono text-xs uppercase tracking-[0.18em] text-white/82">
+      {children}
+    </p>
   );
 }
 
-function FryScene({ ingredient }: { ingredient: string }) {
+function ChopScene({ emoji, ingredient }: { emoji: string; ingredient: string }) {
   return (
-    <>
-      <div className="absolute top-10 flex gap-4">
-        {[0, 1, 2, 3].map((item) => (
-          <span
-            key={item}
-            className="h-16 w-2 rounded-full bg-[var(--color-butter)]"
-            style={{ animation: `sizzleWave 0.8s ease-in-out ${item * 0.12}s infinite` }}
-          />
-        ))}
-      </div>
-      <motion.div
-        initial={{ x: -180 }}
-        animate={{ x: 0 }}
-        transition={{ type: "spring", bounce: 0.25 }}
-        className="relative mt-20 h-24 w-64 rounded-b-[5rem] rounded-t-[1.8rem] border-4 border-[var(--color-butter)] bg-[var(--color-terracotta)] shadow-[0_20px_0_rgba(0,0,0,0.22)]"
-      >
-        <span className="absolute -right-20 top-8 h-6 w-24 rounded-full bg-[var(--color-butter)]" />
-        <motion.span
-          animate={{ y: [-80, -8, -24], scale: [0.8, 1, 0.95] }}
-          transition={{ duration: 1.1, repeat: Infinity, repeatDelay: 0.4 }}
-          className="absolute left-1/2 top-2 -translate-x-1/2"
+    <div className="relative grid w-full place-items-center">
+      <div className="relative mt-10 h-48 w-80 rounded-[2rem] border-4 border-[#8b5a36] bg-[#c98b56] shadow-[0_18px_0_rgba(0,0,0,0.22)]">
+        <span className="absolute left-5 top-5 size-8 rounded-full border-4 border-[#8b5a36]/35" />
+        <motion.div
+          className="absolute left-1/2 top-4 h-28 w-9 origin-bottom rounded-b-xl rounded-t-sm bg-[var(--color-butter)] shadow-[0_9px_0_rgba(0,0,0,0.18)]"
+          style={{ animation: "knifeChop 0.72s ease-in-out infinite" }}
         >
-          <IngredientToken label={ingredient} />
-        </motion.span>
-      </motion.div>
-    </>
+          <span className="absolute -right-5 top-2 h-24 w-5 rounded-full bg-white/85" />
+        </motion.div>
+        <div className="absolute bottom-9 left-1/2 flex -translate-x-1/2 items-end gap-3">
+          {[0, 1, 2, 3].map((item) => (
+            <motion.div
+              key={item}
+              animate={{ y: [0, -10, 0], x: [0, item * 5 - 8, 0] }}
+              transition={{ duration: 0.75, delay: item * 0.08, repeat: Infinity }}
+            >
+              <IngredientPiece emoji={emoji} small />
+            </motion.div>
+          ))}
+        </div>
+      </div>
+      <StageLabel>{ingredient}</StageLabel>
+    </div>
   );
 }
 
-function BoilScene({ ingredient }: { ingredient: string }) {
+function FryScene({ emoji, ingredient }: { emoji: string; ingredient: string }) {
   return (
-    <div className="relative grid place-items-center">
+    <div className="relative grid w-full place-items-center">
       <div className="absolute top-5 flex gap-4">
         {[0, 1, 2, 3, 4].map((item) => (
           <span
             key={item}
-            className="size-5 rounded-full bg-white/45"
+            className="h-16 w-2 rounded-full bg-[var(--color-butter)]"
+            style={{ animation: `sizzleWave 0.78s ease-in-out ${item * 0.1}s infinite` }}
+          />
+        ))}
+      </div>
+      <motion.div
+        initial={{ x: -160 }}
+        animate={{ x: 0 }}
+        transition={{ type: "spring", bounce: 0.26 }}
+        className="relative mt-20 h-32 w-80"
+        style={{ animation: "panToss 1.25s ease-in-out infinite" }}
+      >
+        <div className="absolute inset-x-5 bottom-0 h-24 rounded-b-[5rem] rounded-t-[2rem] border-4 border-[var(--color-butter)] bg-[var(--color-terracotta)] shadow-[0_20px_0_rgba(0,0,0,0.24)]">
+          <span className="absolute -right-20 top-8 h-6 w-28 rounded-full bg-[var(--color-butter)] shadow-[0_5px_0_rgba(0,0,0,0.18)]" />
+          <span className="absolute left-1/2 top-7 h-6 w-40 -translate-x-1/2 rounded-full bg-white/16 [animation:oilShine_1.1s_ease-in-out_infinite]" />
+          {[0, 1, 2, 3].map((item) => (
+            <motion.div
+              key={item}
+              animate={{
+                x: [item * 26 - 42, item * 22 - 30, item * 26 - 42],
+                y: [-4, -28 - item * 2, -4],
+                rotate: [0, 24, 0],
+              }}
+              transition={{ duration: 0.9, delay: item * 0.08, repeat: Infinity }}
+              className="absolute left-1/2 top-3"
+            >
+              <IngredientPiece emoji={emoji} small />
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+      <StageLabel>Frying {ingredient}</StageLabel>
+    </div>
+  );
+}
+
+function BoilScene({ emoji, ingredient }: { emoji: string; ingredient: string }) {
+  return (
+    <div className="relative grid place-items-center">
+      <motion.div
+        className="absolute top-6 h-8 w-48 rounded-full border-4 border-[var(--color-butter)] bg-white/15"
+        style={{ animation: "potLidRattle 0.58s ease-in-out infinite" }}
+      />
+      <div className="absolute top-14 flex gap-4">
+        {[0, 1, 2, 3, 4, 5].map((item) => (
+          <span
+            key={item}
+            className="size-5 rounded-full border border-white/40 bg-white/35"
             style={{ animation: `bubbleRise 1.2s ease-in-out ${item * 0.18}s infinite` }}
           />
         ))}
       </div>
-      <div className="mt-20 h-36 w-56 rounded-b-[3rem] rounded-t-xl border-4 border-[var(--color-butter)] bg-[var(--color-olive)] shadow-[0_18px_0_rgba(0,0,0,0.24)]">
-        <div className="mx-auto mt-4 h-4 w-36 rounded-full bg-white/20" />
-        <p className="mt-10 text-center font-display text-3xl font-semibold">{ingredient}</p>
+      <div className="mt-24 h-40 w-64 rounded-b-[3.25rem] rounded-t-2xl border-4 border-[var(--color-butter)] bg-[var(--color-olive)] shadow-[0_18px_0_rgba(0,0,0,0.24)]">
+        <div className="mx-auto mt-5 h-5 w-44 rounded-full bg-white/22" />
+        <div className="mt-8 flex justify-center gap-3">
+          {[0, 1, 2].map((item) => (
+            <IngredientPiece key={item} emoji={emoji} small delay={item * 0.12} />
+          ))}
+        </div>
       </div>
+      <StageLabel>Simmering {ingredient}</StageLabel>
     </div>
   );
 }
 
-function StirScene({ ingredient }: { ingredient: string }) {
+function StirScene({ emoji, ingredient }: { emoji: string; ingredient: string }) {
   return (
     <div className="relative grid place-items-center">
-      <div className="relative mt-12 grid size-56 place-items-center rounded-full border-4 border-[var(--color-butter)] bg-[var(--color-olive)] shadow-[0_18px_0_rgba(0,0,0,0.24)]">
-        <div className="absolute h-28 w-3 origin-bottom rounded-full bg-[var(--color-butter)] [animation:spoonStir_1.2s_linear_infinite]" />
-        <IngredientToken label={ingredient} />
+      <div className="relative mt-12 grid size-64 place-items-center rounded-full border-4 border-[var(--color-butter)] bg-[var(--color-olive)] shadow-[0_18px_0_rgba(0,0,0,0.24)]">
+        <div className="absolute inset-8 rounded-full bg-[#f0b44b]/60 shadow-[inset_0_0_28px_rgba(61,43,31,0.22)]" />
+        <div className="absolute h-32 w-3 origin-bottom rounded-full bg-[var(--color-butter)] shadow-[0_4px_0_rgba(0,0,0,0.18)] [animation:spoonStir_1.05s_linear_infinite]" />
+        {[0, 1, 2, 3].map((item) => (
+          <motion.div
+            key={item}
+            animate={{ rotate: [item * 90, item * 90 + 360] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
+            className="absolute"
+          >
+            <div className="translate-x-16">
+              <IngredientPiece emoji={emoji} small />
+            </div>
+          </motion.div>
+        ))}
       </div>
+      <StageLabel>Stirring {ingredient}</StageLabel>
     </div>
   );
 }
 
-function BakeScene({ ingredient }: { ingredient: string }) {
+function BakeScene({ emoji, ingredient }: { emoji: string; ingredient: string }) {
   return (
     <div className="relative grid place-items-center">
-      <div className="relative grid h-56 w-72 place-items-center rounded-[2rem] border-4 border-[var(--color-butter)] bg-[var(--color-charcoal)] shadow-[0_18px_0_rgba(0,0,0,0.24)]">
-        <span className="absolute inset-8 rounded-2xl bg-[var(--color-terracotta)]/55 [animation:heatShimmer_0.8s_ease-in-out_infinite]" />
+      <div className="relative grid h-60 w-80 place-items-center rounded-[2rem] border-4 border-[var(--color-butter)] bg-[var(--color-charcoal)] shadow-[0_18px_0_rgba(0,0,0,0.24)]">
+        <span className="absolute inset-8 rounded-2xl bg-[var(--color-terracotta)]/60 [animation:ovenGlow_1s_ease-in-out_infinite]" />
+        <span className="absolute left-8 top-8 size-4 rounded-full bg-[var(--color-butter)]" />
+        <span className="absolute left-8 top-16 size-4 rounded-full bg-[var(--color-terracotta)]" />
         <motion.div
-          animate={{ rotateX: [0, -26, 0] }}
+          animate={{ rotateX: [0, -22, 0] }}
           transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-x-10 bottom-8 h-16 rounded-xl border border-white/15 bg-[var(--color-butter)]/25"
-        />
-        <p className="relative font-display text-3xl font-semibold">{ingredient}</p>
+          className="absolute inset-x-12 bottom-10 flex h-20 items-center justify-center gap-3 rounded-xl border border-white/15 bg-[var(--color-butter)]/28"
+        >
+          {[0, 1, 2].map((item) => (
+            <IngredientPiece key={item} emoji={emoji} small delay={item * 0.1} />
+          ))}
+        </motion.div>
       </div>
+      <StageLabel>Baking {ingredient}</StageLabel>
     </div>
   );
 }
 
-function PlateScene({ ingredient }: { ingredient: string }) {
+function PlateScene({ emoji, ingredient }: { emoji: string; ingredient: string }) {
   return (
     <div className="relative grid place-items-center">
       <motion.div
-        initial={{ x: -180, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
+        initial={{ x: -180, opacity: 0, rotate: -6 }}
+        animate={{ x: 0, opacity: 1, rotate: 0 }}
         transition={{ type: "spring", bounce: 0.35 }}
-        className="grid h-44 w-72 place-items-center rounded-[50%] border-4 border-[var(--color-butter)] bg-white text-[var(--color-warm-brown)] shadow-[0_18px_0_rgba(0,0,0,0.22)]"
+        className="relative grid h-48 w-80 place-items-center rounded-[50%] border-4 border-[var(--color-butter)] bg-white text-[var(--color-warm-brown)] shadow-[0_18px_0_rgba(0,0,0,0.22)]"
       >
-        <IngredientToken label={ingredient} />
+        <span className="absolute inset-8 rounded-[50%] border border-[var(--color-warm-brown)]/10" />
+        <div className="flex items-center justify-center gap-2">
+          {[0, 1, 2, 3].map((item) => (
+            <IngredientPiece key={item} emoji={emoji} small delay={item * 0.08} />
+          ))}
+        </div>
       </motion.div>
       <SparkleRing />
+      <StageLabel>Plating {ingredient}</StageLabel>
     </div>
   );
 }
 
-function RestScene({ ingredient }: { ingredient: string }) {
+function RestScene({ emoji, ingredient }: { emoji: string; ingredient: string }) {
   return (
-    <motion.div
-      animate={{
-        boxShadow: [
-          "0 0 0 0 rgba(245,200,66,0.25)",
-          "0 0 0 32px rgba(245,200,66,0)",
-          "0 0 0 0 rgba(245,200,66,0.25)",
-        ],
-      }}
-      transition={{ duration: 1.6, repeat: Infinity }}
-      className="grid size-64 place-items-center rounded-full bg-[var(--color-butter)]/20"
-    >
-      <IngredientToken label={ingredient} />
-    </motion.div>
+    <div className="relative grid place-items-center">
+      <motion.div
+        animate={{
+          boxShadow: [
+            "0 0 0 0 rgba(245,200,66,0.25)",
+            "0 0 0 34px rgba(245,200,66,0)",
+            "0 0 0 0 rgba(245,200,66,0.25)",
+          ],
+        }}
+        transition={{ duration: 1.6, repeat: Infinity }}
+        className="grid size-64 place-items-center rounded-full bg-[var(--color-butter)]/20"
+      >
+        <div className="grid size-44 place-items-center rounded-[50%] border-4 border-[var(--color-butter)] bg-white">
+          <IngredientPiece emoji={emoji} label={ingredient} />
+        </div>
+      </motion.div>
+      <StageLabel>Resting</StageLabel>
+    </div>
   );
 }
 
