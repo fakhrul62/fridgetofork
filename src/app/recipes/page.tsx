@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Logo } from "@/components/brand/logo";
+import { DishArtwork } from "@/components/visuals/dish-artwork";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -77,16 +78,48 @@ export default async function SavedRecipesPage() {
                 key={recipe.id}
                 className="rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/58 p-5 shadow-[4px_4px_0_rgba(61,43,31,0.1)]"
               >
+                <DishArtwork
+                  name={recipe.name}
+                  ingredients={recipe.ingredients}
+                  compact
+                  className="mb-5"
+                />
                 <p className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--color-terracotta)]">
-                  {recipe.cuisine} · {recipe.difficulty} · {recipe.cook_time} min
+                  {recipe.cuisine} / {recipe.difficulty} / {recipe.cook_time} min
                 </p>
                 <h2 className="mt-3 font-display text-3xl font-semibold">{recipe.name}</h2>
                 <p className="mt-3 leading-7 text-[var(--color-warm-brown)]/68">
                   {recipe.description}
                 </p>
                 <p className="mt-5 font-mono text-xs uppercase tracking-[0.12em] text-[var(--color-warm-brown)]/58">
-                  {recipe.ingredients.join(" · ")}
+                  {recipe.ingredients.join(" / ")}
                 </p>
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  {["Favorite", "Cooked 1x", "Replay"].map((label) => (
+                    <Link
+                      key={label}
+                      href={`/recipe/${recipe.id}`}
+                      className="rounded-full bg-[var(--color-butter)]/35 px-3 py-2 text-center font-mono text-[10px] uppercase tracking-[0.1em]"
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+                <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+                  <input
+                    placeholder="Tags: cozy, fast, lunch"
+                    className="h-11 rounded-full border border-[var(--color-warm-brown)]/12 bg-white/70 px-4 text-sm outline-none"
+                  />
+                  <select className="h-11 rounded-full border border-[var(--color-warm-brown)]/12 bg-white/70 px-3 text-sm outline-none">
+                    <option>5 stars</option>
+                    <option>4 stars</option>
+                    <option>3 stars</option>
+                  </select>
+                </div>
+                <textarea
+                  placeholder="Chef note: what would you tweak next time?"
+                  className="mt-3 min-h-20 w-full resize-none rounded-2xl border border-[var(--color-warm-brown)]/12 bg-white/70 p-3 text-sm outline-none focus:border-[var(--color-terracotta)]"
+                />
               </article>
             ))}
           </section>
@@ -95,3 +128,4 @@ export default async function SavedRecipesPage() {
     </main>
   );
 }
+

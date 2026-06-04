@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { DishArtwork } from "@/components/visuals/dish-artwork";
 import { cn } from "@/lib/utils";
 import type { RecipeOption } from "@/store/use-kitchen-store";
 
@@ -87,6 +88,12 @@ export function RecipeExplorer({ recipes }: RecipeExplorerProps) {
             href={`/recipe/${recipe.id}`}
             className="group rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/58 p-5 shadow-[4px_4px_0_rgba(61,43,31,0.1)] transition-transform hover:-translate-y-1"
           >
+            <DishArtwork
+              name={recipe.name}
+              ingredients={recipe.ingredients}
+              compact
+              className="mb-5"
+            />
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--color-terracotta)]">
               #{index + 1} · {recipe.cuisine}
             </p>

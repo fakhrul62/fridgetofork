@@ -5,6 +5,7 @@ import { ChefHat, Clock3, Flame, SlidersHorizontal, Sparkles, X } from "lucide-r
 import { useState } from "react";
 
 import { CookingAnimationSystem } from "@/components/kitchen/cooking-animation-system";
+import { IngredientIllustration } from "@/components/visuals/ingredient-illustration";
 import { cn } from "@/lib/utils";
 import { useKitchenStore, type RecipeOption } from "@/store/use-kitchen-store";
 
@@ -17,6 +18,50 @@ const moods = ["cozy", "spicy", "light", "fancy", "lazy"] as const;
 const timeLimits = [20, 30, 45] as const;
 const dietaryStyles = ["anything", "vegetarian", "high protein", "budget"] as const;
 
+function getSavedPreferences() {
+  const defaults = {
+    timeLimit: 30 as (typeof timeLimits)[number],
+    dietaryStyle: "anything" as (typeof dietaryStyles)[number],
+    spiceLevel: "gentle" as "gentle" | "bold",
+    avoid: "",
+  };
+
+  if (typeof window === "undefined") {
+    return defaults;
+  }
+
+  const savedProfile = window.localStorage.getItem("fridge-to-fork-preferences");
+
+  if (!savedProfile) {
+    return defaults;
+  }
+
+  try {
+    const profile = JSON.parse(savedProfile) as {
+      dietaryStyle?: (typeof dietaryStyles)[number];
+      spiceLevel?: "gentle" | "bold";
+      timeLimit?: (typeof timeLimits)[number];
+      allergies?: string;
+    };
+
+    return {
+      timeLimit:
+        profile.timeLimit && timeLimits.includes(profile.timeLimit)
+          ? profile.timeLimit
+          : defaults.timeLimit,
+      dietaryStyle:
+        profile.dietaryStyle && dietaryStyles.includes(profile.dietaryStyle)
+          ? profile.dietaryStyle
+          : defaults.dietaryStyle,
+      spiceLevel: profile.spiceLevel ?? defaults.spiceLevel,
+      avoid: profile.allergies ?? defaults.avoid,
+    };
+  } catch {
+    window.localStorage.removeItem("fridge-to-fork-preferences");
+    return defaults;
+  }
+}
+
 export function CookingStage() {
   const selectedIngredients = useKitchenStore((state) => state.selectedIngredients);
   const recipeOptions = useKitchenStore((state) => state.recipeOptions);
@@ -26,13 +71,16 @@ export function CookingStage() {
   const setRecipeOptions = useKitchenStore((state) => state.setRecipeOptions);
   const setActiveRecipe = useKitchenStore((state) => state.setActiveRecipe);
   const setStageStatus = useKitchenStore((state) => state.setStageStatus);
+  const savedPreferences = getSavedPreferences();
   const [errorMessage, setErrorMessage] = useState("");
   const [mood, setMood] = useState<(typeof moods)[number]>("cozy");
-  const [timeLimit, setTimeLimit] = useState<(typeof timeLimits)[number]>(30);
+  const [timeLimit, setTimeLimit] =
+    useState<(typeof timeLimits)[number]>(savedPreferences.timeLimit);
   const [dietaryStyle, setDietaryStyle] =
-    useState<(typeof dietaryStyles)[number]>("anything");
-  const [spiceLevel, setSpiceLevel] = useState<"gentle" | "bold">("gentle");
-  const [avoid, setAvoid] = useState("");
+    useState<(typeof dietaryStyles)[number]>(savedPreferences.dietaryStyle);
+  const [spiceLevel, setSpiceLevel] =
+    useState<"gentle" | "bold">(savedPreferences.spiceLevel);
+  const [avoid, setAvoid] = useState(savedPreferences.avoid);
   const canGenerate = selectedIngredients.length >= 2;
   const isGenerating = stageStatus === "suggesting";
 
@@ -83,6 +131,18 @@ export function CookingStage() {
       <div className="relative flex min-h-[620px] flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#2c1d15] p-5 text-[var(--color-cream)] sm:p-6">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(245,200,66,0.18),transparent_22rem)]" />
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/30 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-6 top-4 h-16 rounded-b-3xl border border-white/10 bg-white/[0.04]">
+          <span className="absolute left-6 top-4 h-8 w-28 rounded-full bg-[var(--color-butter)]/25" />
+          <span className="absolute right-10 top-3 h-10 w-4 rounded-full bg-white/18" />
+          <span className="absolute right-18 top-3 h-10 w-4 rounded-full bg-white/18" />
+          <span className="absolute right-26 top-3 h-10 w-4 rounded-full bg-white/18" />
+        </div>
+        <div className="pointer-events-none absolute inset-x-8 bottom-5 h-10 rounded-[50%] bg-black/25 blur-md" />
+        <div className="pointer-events-none absolute bottom-8 left-8 flex gap-3">
+          {[0, 1, 2].map((knob) => (
+            <span key={knob} className="size-8 rounded-full border border-white/15 bg-white/8" />
+          ))}
+        </div>
 
         {activeRecipe ? (
           <CookingAnimationSystem key={activeRecipe.id} recipe={activeRecipe} />
@@ -128,10 +188,10 @@ export function CookingStage() {
                       </span>
                     </div>
                     <h3 className="mt-7 font-display text-4xl font-semibold">
-                      Add ingredients to begin
+                      Your fridge is humming.
                     </h3>
                     <p className="mt-3 leading-7 text-white/68">
-                      Your pan is warm, your counter is clear, and the stage is waiting.
+                      Pick a few ingredients and I&apos;ll start warming the pan.
                     </p>
                   </motion.div>
                 ) : (
@@ -193,7 +253,13 @@ export function CookingStage() {
                             >
                               <X className="size-4" strokeWidth={3} />
                             </button>
-                            <span className="text-5xl">{ingredient.emoji}</span>
+                            <motion.span layoutId={`ingredient-flight-${ingredient.id}`}>
+                              <IngredientIllustration
+                                name={ingredient.name}
+                                category={ingredient.category}
+                                size="md"
+                              />
+                            </motion.span>
                             <span className="mt-2 font-mono text-xs uppercase tracking-[0.12em]">
                               {ingredient.name}
                             </span>

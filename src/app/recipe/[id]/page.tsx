@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 
 import { Logo } from "@/components/brand/logo";
 import { RecipeReplay } from "@/components/recipes/recipe-replay";
+import { RecipeEditPanel } from "@/components/recipes/recipe-edit-panel";
 import { ShareButton } from "@/components/recipes/share-button";
+import { DishArtwork } from "@/components/visuals/dish-artwork";
+import { IngredientPill } from "@/components/visuals/ingredient-illustration";
 import { getRecipeById } from "@/lib/recipes";
 
 type RecipePageProps = {
@@ -26,7 +29,7 @@ export default async function RecipePage({ params }: RecipePageProps) {
         <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <Logo />
           <div className="flex flex-wrap gap-3">
-            <ShareButton title={recipe.name} />
+            <ShareButton title={recipe.name} ingredients={recipe.ingredients} />
             <Link
               href="/explore"
               className="rounded-full bg-[var(--color-terracotta)] px-5 py-3 font-semibold text-white shadow-[3px_3px_0_var(--color-warm-brown)]"
@@ -50,21 +53,21 @@ export default async function RecipePage({ params }: RecipePageProps) {
               </p>
             </div>
 
+            <DishArtwork name={recipe.name} ingredients={recipe.ingredients} />
+
             <section className="rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/54 p-5 shadow-[4px_4px_0_rgba(61,43,31,0.1)]">
               <h2 className="font-display text-3xl font-semibold">Ingredients</h2>
               <div className="mt-4 flex flex-wrap gap-2">
                 {recipe.ingredients.map((ingredient) => (
-                  <span
-                    key={ingredient}
-                    className="rounded-full bg-[var(--color-butter)]/55 px-3 py-2 font-mono text-xs uppercase tracking-[0.1em]"
-                  >
-                    {ingredient}
-                  </span>
+                  <IngredientPill key={ingredient} name={ingredient} />
                 ))}
               </div>
             </section>
 
-            {(recipe.tasteNotes?.length || recipe.substitutions?.length) ? (
+            {(recipe.tasteNotes?.length ||
+              recipe.substitutions?.length ||
+              recipe.shoppingList?.length ||
+              recipe.nutrition) ? (
               <section className="rounded-[1.5rem] border border-[var(--color-warm-brown)]/12 bg-white/54 p-5 shadow-[4px_4px_0_rgba(61,43,31,0.1)]">
                 <h2 className="font-display text-3xl font-semibold">Chef notes</h2>
                 {recipe.tasteNotes?.length ? (
@@ -86,6 +89,29 @@ export default async function RecipePage({ params }: RecipePageProps) {
                     ))}
                   </ul>
                 ) : null}
+                {recipe.shoppingList?.length ? (
+                  <div className="mt-5 rounded-2xl bg-[var(--color-butter)]/22 p-4">
+                    <p className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--color-warm-brown)]/60">
+                      Tiny shopping list
+                    </p>
+                    <p className="mt-2 leading-7">{recipe.shoppingList.join(", ")}</p>
+                  </div>
+                ) : null}
+                {recipe.nutrition ? (
+                  <div className="mt-4 grid grid-cols-4 gap-2 text-center font-mono text-[11px] uppercase tracking-[0.1em]">
+                    {[
+                      ["Cal", recipe.nutrition.calories],
+                      ["Protein", `${recipe.nutrition.protein}g`],
+                      ["Carbs", `${recipe.nutrition.carbs}g`],
+                      ["Fat", `${recipe.nutrition.fat}g`],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-2xl bg-white/70 p-3">
+                        <p className="text-[var(--color-terracotta)]">{value}</p>
+                        <p className="mt-1 text-[var(--color-warm-brown)]/50">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </section>
             ) : null}
 
@@ -103,6 +129,8 @@ export default async function RecipePage({ params }: RecipePageProps) {
                 ))}
               </ol>
             </section>
+
+            <RecipeEditPanel recipe={recipe} />
           </div>
 
           <RecipeReplay recipe={recipe} />

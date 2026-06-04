@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 
+import { IngredientIllustration } from "@/components/visuals/ingredient-illustration";
 import { categoryLabels, categoryStyles } from "@/data/ingredients";
 import { cn } from "@/lib/utils";
 import type { Ingredient } from "@/store/use-kitchen-store";
@@ -50,10 +51,14 @@ export function IngredientCard({
         <Check className="size-4" strokeWidth={3} />
       </span>
       <motion.span
-        layoutId={`ingredient-emoji-${ingredient.id}`}
-        className="text-5xl drop-shadow-sm"
+        layoutId={`ingredient-flight-${ingredient.id}`}
+        className="w-fit"
       >
-        {ingredient.emoji}
+        <IngredientIllustration
+          name={ingredient.name}
+          category={ingredient.category}
+          size="md"
+        />
       </motion.span>
       <span className="space-y-3">
         <span className="block font-display text-2xl font-semibold leading-none text-[var(--color-warm-brown)]">

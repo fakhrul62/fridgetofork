@@ -71,6 +71,11 @@ export type Database = {
           cook_time: number;
           difficulty: Difficulty;
           cuisine: string;
+          match_score: number | null;
+          substitutions: string[] | null;
+          taste_notes: string[] | null;
+          shopping_list: string[] | null;
+          nutrition: Json | null;
           created_at: string;
         };
         Insert: {
@@ -82,6 +87,11 @@ export type Database = {
           cook_time: number;
           difficulty: Difficulty;
           cuisine: string;
+          match_score?: number | null;
+          substitutions?: string[] | null;
+          taste_notes?: string[] | null;
+          shopping_list?: string[] | null;
+          nutrition?: Json | null;
           created_at?: string;
         };
         Update: {
@@ -93,6 +103,11 @@ export type Database = {
           cook_time?: number;
           difficulty?: Difficulty;
           cuisine?: string;
+          match_score?: number | null;
+          substitutions?: string[] | null;
+          taste_notes?: string[] | null;
+          shopping_list?: string[] | null;
+          nutrition?: Json | null;
           created_at?: string;
         };
         Relationships: [];
@@ -102,18 +117,33 @@ export type Database = {
           id: string;
           user_id: string | null;
           recipe_id: string | null;
+          favorite: boolean;
+          cooked_count: number;
+          notes: string | null;
+          rating: number | null;
+          tags: string[] | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id?: string | null;
           recipe_id?: string | null;
+          favorite?: boolean;
+          cooked_count?: number;
+          notes?: string | null;
+          rating?: number | null;
+          tags?: string[] | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string | null;
           recipe_id?: string | null;
+          favorite?: boolean;
+          cooked_count?: number;
+          notes?: string | null;
+          rating?: number | null;
+          tags?: string[] | null;
           created_at?: string;
         };
         Relationships: [];

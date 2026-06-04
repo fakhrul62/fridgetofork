@@ -37,6 +37,15 @@ const recipeSchema = z.object({
   match_score: z.number().int().min(0).max(100).optional(),
   substitutions: z.array(z.string()).optional(),
   taste_notes: z.array(z.string()).optional(),
+  shopping_list: z.array(z.string()).optional(),
+  nutrition: z
+    .object({
+      calories: z.number().int().min(0),
+      protein: z.number().int().min(0),
+      carbs: z.number().int().min(0),
+      fat: z.number().int().min(0),
+    })
+    .optional(),
 });
 
 const responseSchema = z.object({
@@ -44,9 +53,17 @@ const responseSchema = z.object({
 });
 
 type GeneratedRecipe = z.infer<typeof recipeSchema>;
-type SavedGeneratedRecipe = GeneratedRecipe & {
+type SavedGeneratedRecipe = Omit<
+  GeneratedRecipe,
+  "ingredients" | "match_score" | "substitutions" | "taste_notes" | "shopping_list" | "nutrition"
+> & {
   id: string;
   ingredients: string[];
+  match_score?: number | null;
+  substitutions?: string[] | null;
+  taste_notes?: string[] | null;
+  shopping_list?: string[] | null;
+  nutrition?: Json | null;
 };
 
 const systemPrompt = `You are a professional chef and recipe writer.
@@ -63,6 +80,8 @@ NO backticks, NO preamble. Format:
       "match_score": number,
       "substitutions": string[],
       "taste_notes": string[],
+      "shopping_list": string[],
+      "nutrition": { "calories": number, "protein": number, "carbs": number, "fat": number },
       "steps": [
         {
           "step_number": number,
@@ -102,6 +121,8 @@ const fallbackRecipes = (
         `Need more body? Add rice, pasta, or toasted bread on the side.`,
       ],
       taste_notes: ["Glossy", "Savory", spiceNote],
+      shopping_list: ["olive oil", "salt", "fresh herbs"],
+      nutrition: { calories: 520, protein: 34, carbs: 38, fat: 24 },
       steps: [
         {
           step_number: 1,
@@ -149,6 +170,8 @@ const fallbackRecipes = (
         `No ${first}? Swap in tofu, eggs, shrimp, or mushrooms.`,
       ],
       taste_notes: ["Layered", "Steamy", "Flexible"],
+      shopping_list: ["soy sauce", "sesame oil", "lime"],
+      nutrition: { calories: 610, protein: 29, carbs: 72, fat: 20 },
       steps: [
         {
           step_number: 1,
@@ -196,6 +219,8 @@ const fallbackRecipes = (
         "No dairy? Use olive oil, coconut milk, or a spoon of tahini.",
       ],
       taste_notes: ["Bubbly", "Toasty", "Comforting"],
+      shopping_list: ["breadcrumbs", "olive oil", "greens"],
+      nutrition: { calories: 680, protein: 32, carbs: 48, fat: 34 },
       steps: [
         {
           step_number: 1,
@@ -275,9 +300,14 @@ const saveRecipes = async (
         cook_time: recipe.cook_time,
         difficulty: recipe.difficulty,
         cuisine: recipe.cuisine,
+        match_score: recipe.match_score ?? null,
+        substitutions: recipe.substitutions ?? [],
+        taste_notes: recipe.taste_notes ?? [],
+        shopping_list: recipe.shopping_list ?? [],
+        nutrition: (recipe.nutrition ?? null) as Json,
       })),
     )
-    .select("id,name,description,ingredients,steps,cook_time,difficulty,cuisine");
+    .select("id,name,description,ingredients,steps,cook_time,difficulty,cuisine,match_score,substitutions,taste_notes,shopping_list,nutrition");
 
   if (error || !data) {
     return recipes.map((recipe, index) => ({
@@ -296,6 +326,11 @@ const saveRecipes = async (
     cook_time: recipe.cook_time,
     difficulty: recipe.difficulty,
     cuisine: recipe.cuisine,
+    match_score: recipe.match_score ?? null,
+    substitutions: recipe.substitutions ?? [],
+    taste_notes: recipe.taste_notes ?? [],
+    shopping_list: recipe.shopping_list ?? [],
+    nutrition: recipe.nutrition,
   }));
 };
 
@@ -352,6 +387,15 @@ Prioritize recipes that use as many selected ingredients as possible. Include ma
       matchScore: recipe.match_score ?? Math.min(96, 70 + recipe.ingredients.length * 4),
       substitutions: recipe.substitutions ?? [],
       tasteNotes: recipe.taste_notes ?? [],
+      shoppingList: recipe.shopping_list ?? [],
+      nutrition:
+        recipe.nutrition ??
+        {
+          calories: 520,
+          protein: 28,
+          carbs: 46,
+          fat: 22,
+        },
     })),
   });
 }

@@ -26,6 +26,13 @@ export type RecipeOption = {
   matchScore?: number;
   substitutions?: string[];
   tasteNotes?: string[];
+  shoppingList?: string[];
+  nutrition?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 };
 
 export type CookingStageStatus =

@@ -19,6 +19,7 @@ export function IngredientWorkspace() {
   const [activeCategory, setActiveCategory] = useState<IngredientCategory | "all">("all");
   const [availableIngredients, setAvailableIngredients] =
     useState<Ingredient[]>(fallbackIngredients);
+  const [mobileView, setMobileView] = useState<"pantry" | "stage">("pantry");
   const selectedIngredients = useKitchenStore((state) => state.selectedIngredients);
   const maxIngredients = useKitchenStore((state) => state.maxIngredients);
   const selectIngredient = useKitchenStore((state) => state.selectIngredient);
@@ -89,9 +90,13 @@ export function IngredientWorkspace() {
       return;
     }
 
-    const parsed = JSON.parse(savedPantry) as Ingredient[];
-    clearIngredients();
-    parsed.slice(0, maxIngredients).forEach((ingredient) => selectIngredient(ingredient));
+    try {
+      const parsed = JSON.parse(savedPantry) as Ingredient[];
+      clearIngredients();
+      parsed.slice(0, maxIngredients).forEach((ingredient) => selectIngredient(ingredient));
+    } catch {
+      window.localStorage.removeItem("fridge-to-fork-pantry");
+    }
   };
   const dailyChallenge = availableIngredients
     .slice()
@@ -102,8 +107,30 @@ export function IngredientWorkspace() {
 
   return (
     <section id="kitchen" className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
-      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)] lg:items-start">
-        <div className="rounded-[2rem] border border-[var(--color-warm-brown)]/12 bg-white/42 p-4 shadow-[7px_7px_0_rgba(61,43,31,0.1)] backdrop-blur sm:p-6">
+      <div className="mx-auto max-w-7xl lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)] lg:items-start lg:gap-6">
+        <div className="sticky top-2 z-30 mb-4 grid grid-cols-2 gap-2 rounded-full border border-[var(--color-warm-brown)]/12 bg-[var(--color-cream)]/90 p-1 shadow-[0_10px_30px_rgba(61,43,31,0.12)] backdrop-blur lg:hidden">
+          {(["pantry", "stage"] as const).map((view) => (
+            <button
+              key={view}
+              type="button"
+              onClick={() => setMobileView(view)}
+              className={cn(
+                "h-11 rounded-full font-mono text-xs uppercase tracking-[0.12em]",
+                mobileView === view
+                  ? "bg-[var(--color-butter)] text-[var(--color-warm-brown)]"
+                  : "text-[var(--color-warm-brown)]/56",
+              )}
+            >
+              {view}
+            </button>
+          ))}
+        </div>
+        <div
+          className={cn(
+            "rounded-[2rem] border border-[var(--color-warm-brown)]/12 bg-white/42 p-4 shadow-[7px_7px_0_rgba(61,43,31,0.1)] backdrop-blur sm:p-6",
+            mobileView === "stage" && "hidden lg:block",
+          )}
+        >
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--color-olive)]">
@@ -225,7 +252,21 @@ export function IngredientWorkspace() {
           ) : null}
         </div>
 
-        <CookingStage />
+        <div className={cn(mobileView === "pantry" && "hidden lg:block")}>
+          <CookingStage />
+        </div>
+      </div>
+      <div className="fixed inset-x-4 bottom-4 z-40 flex items-center justify-between rounded-full border border-[var(--color-warm-brown)]/12 bg-[var(--color-warm-brown)] px-4 py-3 text-[var(--color-cream)] shadow-[0_12px_40px_rgba(61,43,31,0.24)] lg:hidden">
+        <span className="font-mono text-xs uppercase tracking-[0.12em]">
+          {selectedIngredients.length} picked
+        </span>
+        <button
+          type="button"
+          onClick={() => setMobileView("stage")}
+          className="rounded-full bg-[var(--color-butter)] px-4 py-2 font-semibold text-[var(--color-warm-brown)]"
+        >
+          Open stage
+        </button>
       </div>
     </section>
   );

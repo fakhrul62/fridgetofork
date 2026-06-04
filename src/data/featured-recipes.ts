@@ -9,6 +9,11 @@ export const featuredRecipes: RecipeOption[] = [
     cookTime: 28,
     difficulty: "easy",
     cuisine: "Modern comfort",
+    matchScore: 92,
+    substitutions: ["No butter? Use olive oil and a splash of stock."],
+    tasteNotes: ["Golden", "Garlicky", "Glossy"],
+    shoppingList: ["olive oil", "salt", "parsley"],
+    nutrition: { calories: 520, protein: 38, carbs: 26, fat: 28 },
     steps: [
       {
         step_number: 1,
@@ -52,6 +57,11 @@ export const featuredRecipes: RecipeOption[] = [
     cookTime: 22,
     difficulty: "easy",
     cuisine: "Italian-ish",
+    matchScore: 88,
+    substitutions: ["No basil? Use cilantro, scallion, or a pinch of dried herbs."],
+    tasteNotes: ["Silky", "Bright", "Buttery"],
+    shoppingList: ["olive oil", "salt", "black pepper"],
+    nutrition: { calories: 570, protein: 18, carbs: 78, fat: 18 },
     steps: [
       {
         step_number: 1,
@@ -95,6 +105,11 @@ export const featuredRecipes: RecipeOption[] = [
     cookTime: 30,
     difficulty: "medium",
     cuisine: "Pantry bowl",
+    matchScore: 84,
+    substitutions: ["No egg? Use tofu, shrimp, or mushrooms."],
+    tasteNotes: ["Crunchy", "Steamy", "Warm"],
+    shoppingList: ["soy sauce", "sesame oil", "lime"],
+    nutrition: { calories: 620, protein: 24, carbs: 82, fat: 20 },
     steps: [
       {
         step_number: 1,

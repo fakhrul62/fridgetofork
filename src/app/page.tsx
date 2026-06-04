@@ -9,13 +9,15 @@ import { useEffect, useRef } from "react";
 
 import { Logo } from "@/components/brand/logo";
 import { IngredientWorkspace } from "@/components/kitchen/ingredient-workspace";
+import { IngredientIllustration } from "@/components/visuals/ingredient-illustration";
 import { featuredRecipes } from "@/data/featured-recipes";
+import type { IngredientCategory } from "@/types/database";
 
 const floatingIngredients = [
-  { emoji: "🍅", label: "Tomato", className: "left-[8%] top-[21%] delay-0" },
-  { emoji: "🧄", label: "Garlic", className: "right-[15%] top-[16%] delay-200" },
-  { emoji: "🥦", label: "Broccoli", className: "left-[18%] bottom-[16%] delay-500" },
-  { emoji: "🧈", label: "Butter", className: "right-[8%] bottom-[24%] delay-700" },
+  { label: "Tomato", category: "vegetable", className: "left-[8%] top-[21%] delay-0" },
+  { label: "Garlic", category: "aromatic", className: "right-[15%] top-[16%] delay-200" },
+  { label: "Broccoli", category: "vegetable", className: "left-[18%] bottom-[16%] delay-500" },
+  { label: "Butter", category: "dairy", className: "right-[8%] bottom-[24%] delay-700" },
 ];
 
 const foundationCards = [
@@ -194,6 +196,14 @@ export default function Home() {
               >
                 View Foundation
               </motion.button>
+              <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  href="/onboarding"
+                  className="inline-flex h-14 items-center justify-center rounded-full border border-[var(--color-warm-brown)]/25 bg-white/55 px-7 font-semibold text-[var(--color-warm-brown)] shadow-[4px_4px_0_rgba(61,43,31,0.12)] backdrop-blur"
+                >
+                  Set Taste Profile
+                </Link>
+              </motion.div>
             </div>
           </motion.div>
 
@@ -256,11 +266,16 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.7 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.35 + index * 0.12, type: "spring", bounce: 0.5 }}
-            className={`absolute hidden size-20 place-items-center rounded-3xl border border-[var(--color-warm-brown)]/15 bg-white/60 text-4xl shadow-[5px_5px_0_rgba(61,43,31,0.12)] backdrop-blur lg:grid ${ingredient.className}`}
+            className={`absolute hidden size-20 place-items-center rounded-3xl border border-[var(--color-warm-brown)]/15 bg-white/60 shadow-[5px_5px_0_rgba(61,43,31,0.12)] backdrop-blur lg:grid ${ingredient.className}`}
             style={{ animation: `floatIngredient ${4 + index * 0.4}s ease-in-out infinite` }}
             aria-label={ingredient.label}
           >
-            {ingredient.emoji}
+            <IngredientIllustration
+              name={ingredient.label}
+              category={ingredient.category as IngredientCategory}
+              size="sm"
+              className="size-14"
+            />
           </motion.div>
         ))}
       </section>
