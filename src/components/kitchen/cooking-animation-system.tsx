@@ -4,8 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Bookmark,
   ChefHat,
-  Clock3,
   Hand,
+  MoveLeft,
+  MoveRight,
   RotateCcw,
   Volume2,
   VolumeX,
@@ -37,10 +38,7 @@ const stageCopy: Record<AnimationType, string> = {
 };
 
 export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) {
-  const [playback, setPlayback] = useState({
-    stepIndex: 0,
-    remainingSeconds: recipe.steps[0]?.duration_seconds ?? 0,
-  });
+  const [stepIndex, setStepIndex] = useState(0);
   const [runId, setRunId] = useState(0);
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -55,11 +53,11 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
   const setActiveRecipe = useKitchenStore((state) => state.setActiveRecipe);
   const startedSessionRef = useRef(false);
   const completedSessionRef = useRef(false);
-  const currentStep = recipe.steps[playback.stepIndex];
-  const isComplete = playback.stepIndex >= recipe.steps.length;
-  const progress = isComplete ? 100 : (playback.stepIndex / recipe.steps.length) * 100;
+  const currentStep = recipe.steps[stepIndex];
+  const isComplete = stepIndex >= recipe.steps.length;
+  const progress = isComplete ? 100 : (stepIndex / recipe.steps.length) * 100;
   const interactionScore =
-    interactionState.stepIndex === playback.stepIndex ? interactionState.score : 0;
+    interactionState.stepIndex === stepIndex ? interactionState.score : 0;
 
   useEffect(() => {
     if (startedSessionRef.current) {
@@ -110,56 +108,26 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
       playCookingTone(currentStep.animation_type, soundLevel);
     }
     setCurrentStep({
-      index: playback.stepIndex,
+      index: stepIndex,
       animationType: currentStep.animation_type,
-      remainingSeconds: playback.remainingSeconds,
+      remainingSeconds: 0,
     });
   }, [
     currentStep,
-    playback.remainingSeconds,
-    playback.stepIndex,
     recipe.id,
     recipe.steps.length,
     setCurrentStep,
     setStageStatus,
     soundLevel,
     soundOn,
+    stepIndex,
   ]);
-
-  useEffect(() => {
-    if (!currentStep) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setPlayback((state) => {
-        if (state.remainingSeconds <= 1) {
-          window.clearInterval(interval);
-          const nextStepIndex = state.stepIndex + 1;
-          const nextStep = recipe.steps[nextStepIndex];
-
-          return {
-            stepIndex: nextStepIndex,
-            remainingSeconds: nextStep?.duration_seconds ?? 0,
-          };
-        }
-
-        return {
-          stepIndex: state.stepIndex,
-          remainingSeconds: state.remainingSeconds - 1,
-        };
-      });
-    }, 450);
-
-    return () => window.clearInterval(interval);
-  }, [currentStep, recipe.steps, runId]);
 
   const replay = () => {
     setRunId((value) => value + 1);
-    setPlayback({
-      stepIndex: 0,
-      remainingSeconds: recipe.steps[0]?.duration_seconds ?? 0,
-    });
+    setStepIndex(0);
+    setInteractionState({ stepIndex: 0, score: 0 });
+    completedSessionRef.current = false;
     setStageStatus("cooking");
   };
 
@@ -169,9 +137,9 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
   };
   const interactWithStep = () => {
     setInteractionState((state) => ({
-      stepIndex: playback.stepIndex,
+      stepIndex,
       score:
-        state.stepIndex === playback.stepIndex
+        state.stepIndex === stepIndex
           ? Math.min(100, state.score + 18)
           : 18,
     }));
@@ -179,6 +147,17 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
     if (soundOn && currentStep) {
       playCookingTone(currentStep.animation_type, soundLevel);
     }
+  };
+
+  const goToPreviousStep = () => {
+    setStepIndex((value) => Math.max(0, value - 1));
+    setRunId((value) => value + 1);
+    setStageStatus("cooking");
+  };
+
+  const goToNextStep = () => {
+    setStepIndex((value) => Math.min(recipe.steps.length, value + 1));
+    setRunId((value) => value + 1);
   };
 
   const saveRecipe = async () => {
@@ -265,9 +244,9 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
             key={`${step.step_number}-${step.title}`}
             className={cn(
               "shrink-0 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em]",
-              index < playback.stepIndex
+              index < stepIndex
                 ? "border-[var(--color-butter)] bg-[var(--color-butter)] text-[var(--color-warm-brown)]"
-                : index === playback.stepIndex
+                : index === stepIndex
                   ? "border-[var(--color-terracotta)] bg-[var(--color-terracotta)] text-white"
                   : "border-white/10 bg-white/8 text-white/52",
             )}
@@ -339,7 +318,7 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
             exit={{ opacity: 0, y: -16 }}
             className="space-y-4"
           >
-            <div className="flex items-center justify-between gap-4 rounded-3xl bg-white/8 p-4">
+            <div className="rounded-3xl bg-white/8 p-4">
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-[var(--color-butter)]">
                   Step {currentStep.step_number} / {stageCopy[currentStep.animation_type]}
@@ -350,10 +329,6 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
                 <p className="mt-2 max-w-lg text-sm leading-6 text-white/64">
                   {currentStep.action}
                 </p>
-              </div>
-              <div className="grid size-16 shrink-0 place-items-center rounded-2xl bg-[var(--color-butter)] text-[var(--color-warm-brown)]">
-                <Clock3 className="size-5" />
-                <span className="font-mono text-xs">{playback.remainingSeconds}s</span>
               </div>
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-3">
@@ -373,6 +348,23 @@ export function CookingAnimationSystem({ recipe }: CookingAnimationSystemProps) 
                 />
               </div>
             </div>
+            <div className="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+              <StageButton
+                onClick={goToPreviousStep}
+                icon={MoveLeft}
+                label="Previous"
+                muted={stepIndex === 0}
+                disabled={stepIndex === 0}
+              />
+              <div className="text-center font-mono text-xs uppercase tracking-[0.14em] text-white/50">
+                Step {stepIndex + 1} of {recipe.steps.length}
+              </div>
+              <StageButton
+                onClick={goToNextStep}
+                icon={MoveRight}
+                label={stepIndex === recipe.steps.length - 1 ? "Finish Dish" : "Next Step"}
+              />
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -384,21 +376,31 @@ type StageButtonProps = {
   icon: LucideIcon;
   label: string;
   muted?: boolean;
+  disabled?: boolean;
   onClick: () => void;
 };
 
-function StageButton({ icon: Icon, label, muted = false, onClick }: StageButtonProps) {
+function StageButton({
+  icon: Icon,
+  label,
+  muted = false,
+  disabled = false,
+  onClick,
+}: StageButtonProps) {
   return (
     <motion.button
       type="button"
       whileHover={{ y: -3, scale: 1.02 }}
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "inline-flex h-12 items-center justify-center gap-2 rounded-full px-4 font-semibold",
-        muted
-          ? "bg-white/10 text-white/55"
-          : "bg-[var(--color-butter)] text-[var(--color-warm-brown)]",
+        disabled
+          ? "cursor-not-allowed bg-white/8 text-white/28"
+          : muted
+            ? "bg-white/10 text-white/55"
+            : "bg-[var(--color-butter)] text-[var(--color-warm-brown)]",
       )}
     >
       <Icon className="size-4" />
