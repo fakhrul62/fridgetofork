@@ -8,7 +8,6 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 import { Logo } from "@/components/brand/logo";
-import { IngredientWorkspace } from "@/components/kitchen/ingredient-workspace";
 import { featuredRecipes } from "@/data/featured-recipes";
 
 const foundationCards = [
@@ -169,7 +168,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <motion.a
-                href="#kitchen"
+                href="/ingredients"
                 whileHover={{ y: -3, scale: 1.02 }}
                 whileTap={{ scale: 0.95 }}
                 className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[var(--color-terracotta)] px-7 font-semibold text-white shadow-[0_12px_30px_rgba(226,113,75,0.28),4px_4px_0_var(--color-warm-brown)]"
@@ -294,7 +293,31 @@ export default function Home() {
         </div>
       </section>
 
-      <IngredientWorkspace />
+      <section className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto grid max-w-7xl gap-6 overflow-hidden rounded-[2rem] border border-[var(--color-warm-brown)]/12 bg-white/54 p-6 shadow-[7px_7px_0_rgba(61,43,31,0.1)] lg:grid-cols-[1fr_auto] lg:items-center lg:p-10">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--color-olive)]">
+              Full pantry page
+            </p>
+            <h2 className="mt-3 max-w-3xl font-display text-5xl font-semibold leading-none">
+              Pick ingredients without a tiny drawer.
+            </h2>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-[var(--color-warm-brown)]/70">
+              The ingredient picker now lives on its own page, with every ingredient visible
+              in a full grid. Select your lineup, then generate a bigger menu of dish ideas.
+            </p>
+          </div>
+          <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.95 }}>
+            <Link
+              href="/ingredients"
+              className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[var(--color-terracotta)] px-7 font-semibold text-white shadow-[4px_4px_0_var(--color-warm-brown)]"
+            >
+              Open pantry
+              <ArrowRight className="size-5" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
 
       <section className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl">
@@ -363,7 +386,7 @@ export default function Home() {
               Your next favourite meal is 3 ingredients away.
             </h2>
             <motion.a
-              href="#kitchen"
+              href="/ingredients"
               whileHover={{ y: -3, scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
               className="mt-8 inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[var(--color-butter)] px-7 font-semibold text-[var(--color-warm-brown)]"

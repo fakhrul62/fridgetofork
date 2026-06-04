@@ -6,6 +6,8 @@ import type { Json, RecipeStep } from "@/types/database";
 
 const requestSchema = z.object({
   ingredients: z.array(z.string().min(1)).min(2).max(100),
+  count: z.number().int().min(1).max(15).optional(),
+  dishName: z.string().min(1).max(120).optional(),
   preferences: z
     .object({
       mood: z.string().max(40).optional(),
@@ -92,17 +94,26 @@ const animationTypes = ["chop", "fry", "boil", "stir", "bake", "plate", "rest"] 
 
 const buildAiPrompt = (
   ingredients: string[],
+  count: number,
+  dishName?: string,
   preferences?: z.infer<typeof requestSchema>["preferences"],
-) => `You are a professional chef and recipe writer for an animated cooking web app.
+) => {
+  const needsDetailedSteps = count <= 3;
+
+  return `You are a professional chef and recipe writer for an animated cooking web app.
 Return ONLY JSON. No markdown, no preamble.
-Make 3 different recipe ideas from these ingredients: ${ingredients.join(", ")}.
+Make exactly ${count} ${dishName ? `recipe for "${dishName}"` : "different recipe ideas"} from these ingredients: ${ingredients.join(", ")}.
 Preferences: ${JSON.stringify(preferences ?? {})}.
 Avoid template names like "Skillet with Golden", "Rice Bowl", or "Midnight Kitchen Bake".
-Write for someone who cannot cook yet. Every step action must be very descriptive and specific: include heat level, pan/pot size when useful, how to prep the ingredient, what to listen/smell/look for, exact doneness cues, what to do immediately after the sub-step, and safety/handling details like rinsing noodles under cold water, reserving pasta water, patting shrimp dry, lowering heat before adding eggs, or resting food before cutting.
-Each action should be 45-80 words, practical, and written as one clear paragraph. Do not say vague things like "cook until done".
+${
+  needsDetailedSteps
+    ? "Write for someone who cannot cook yet. Every step action must be very descriptive and specific: include heat level, pan/pot size when useful, how to prep the ingredient, what to listen/smell/look for, exact doneness cues, what to do immediately after the sub-step, and safety/handling details like rinsing noodles under cold water, reserving pasta water, patting shrimp dry, lowering heat before adding eggs, or resting food before cutting. Each action should be 45-80 words, practical, and written as one clear paragraph. Do not say vague things like \"cook until done\"."
+    : "This is only a menu suggestion list. Keep each step action concise, 12-22 words, but still valid for animation preview. Save the detailed beginner instructions for the selected dish later."
+}
 Use this exact shape:
 {"recipes":[{"name":"specific dish","description":"one sentence","cook_time":25,"difficulty":"easy|medium|hard","cuisine":"specific style","match_score":88,"substitutions":["swap"],"taste_notes":["savory"],"shopping_list":["optional extra"],"nutrition":{"calories":520,"protein":30,"carbs":45,"fat":20},"steps":[{"step_number":1,"title":"short","action":"specific instruction","ingredient_involved":"ingredient","duration_seconds":20,"animation_type":"chop"}]}]}
 Each recipe needs exactly 4 steps. animation_type must be one of: ${animationTypes.join(", ")}.`;
+};
 
 const extractJsonObject = (text: string) => {
   const firstBrace = text.indexOf("{");
@@ -158,10 +169,10 @@ const readGeminiText = async (prompt: string): Promise<string | null> => {
             generationConfig: {
             responseMimeType: "application/json",
             temperature: 0.8,
-            maxOutputTokens: 4096,
+            maxOutputTokens: 8192,
             },
           }),
-          signal: AbortSignal.timeout(18000),
+          signal: AbortSignal.timeout(30000),
         },
       );
     } catch (error) {
@@ -276,9 +287,11 @@ const readPollinationsText = async (prompt: string): Promise<string | null> => {
 
 const generateAiRecipes = async (
   ingredients: string[],
+  count: number,
+  dishName?: string,
   preferences?: z.infer<typeof requestSchema>["preferences"],
 ): Promise<AiGenerationResult | null> => {
-  const prompt = buildAiPrompt(ingredients, preferences);
+  const prompt = buildAiPrompt(ingredients, count, dishName, preferences);
 
   const providers = [
     { name: "gemini" as const, read: readGeminiText },
@@ -315,6 +328,7 @@ const generateAiRecipes = async (
 
 const generateRecipeOptions = (
   ingredients: string[],
+  count = 3,
   preferences?: z.infer<typeof requestSchema>["preferences"],
 ): GeneratedRecipe[] => {
   const selected = [...new Set(ingredients.map((ingredient) => ingredient.trim()).filter(Boolean))];
@@ -356,7 +370,7 @@ const generateRecipeOptions = (
   const prepTarget = featuredIngredients.slice(1, 4).join(", ") || second;
   const finishingCast = featuredIngredients.slice(0, 6).join(", ");
 
-  return [
+  const baseRecipes: GeneratedRecipe[] = [
     {
       name: `${styleName} ${first} and ${second} ${techniqueName}`,
       description: `A ${mood} one-pan dinner built around ${ingredientList}, finished glossy, savory, and weeknight-friendly.`,
@@ -505,6 +519,34 @@ const generateRecipeOptions = (
       ],
     },
   ];
+
+  if (count <= baseRecipes.length) {
+    return baseRecipes.slice(0, count);
+  }
+
+  return Array.from({ length: count }, (_, index) => {
+    const baseRecipe = baseRecipes[index % baseRecipes.length];
+    const namePrefix = styleNames[(seed + index) % styleNames.length];
+    const technique = techniqueNames[(seed + selected.length + index) % techniqueNames.length];
+
+    return {
+      ...baseRecipe,
+      name:
+        index < baseRecipes.length
+          ? baseRecipe.name
+          : `${namePrefix} ${featuredIngredients[index % featuredIngredients.length] ?? first} ${technique}`,
+      cuisine:
+        index < baseRecipes.length
+          ? baseRecipe.cuisine
+          : ["Bengali-inspired", "Mediterranean", "Weeknight Japanese", "Modern pantry"][
+              index % 4
+            ],
+      match_score:
+        typeof baseRecipe.match_score === "number"
+          ? Math.max(74, baseRecipe.match_score - index)
+          : Math.max(74, matchScore - index),
+    };
+  });
 };
 
 const saveRecipes = async (
@@ -576,9 +618,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const { ingredients, preferences } = parsedRequest.data;
-  const aiRecipes = await generateAiRecipes(ingredients, preferences);
-  const recipes = aiRecipes?.recipes ?? generateRecipeOptions(ingredients, preferences);
+  const { ingredients, count = 3, dishName, preferences } = parsedRequest.data;
+  const aiRecipes = await generateAiRecipes(ingredients, count, dishName, preferences);
+  const recipes =
+    aiRecipes && aiRecipes.recipes.length >= count
+      ? aiRecipes.recipes.slice(0, count)
+      : [
+          ...(aiRecipes?.recipes ?? []),
+          ...generateRecipeOptions(ingredients, count, preferences),
+        ].slice(0, count);
   const savedRecipes = await saveRecipes(recipes, ingredients);
 
   return NextResponse.json({
