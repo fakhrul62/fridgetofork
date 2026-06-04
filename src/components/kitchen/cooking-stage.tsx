@@ -138,11 +138,6 @@ export function CookingStage() {
           <span className="absolute right-26 top-3 h-10 w-4 rounded-full bg-white/18" />
         </div>
         <div className="pointer-events-none absolute inset-x-8 bottom-5 h-10 rounded-[50%] bg-black/25 blur-md" />
-        <div className="pointer-events-none absolute bottom-8 left-8 flex gap-3">
-          {[0, 1, 2].map((knob) => (
-            <span key={knob} className="size-8 rounded-full border border-white/15 bg-white/8" />
-          ))}
-        </div>
 
         {activeRecipe ? (
           <CookingAnimationSystem key={activeRecipe.id} recipe={activeRecipe} />

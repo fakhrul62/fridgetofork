@@ -9,16 +9,7 @@ import { useEffect, useRef } from "react";
 
 import { Logo } from "@/components/brand/logo";
 import { IngredientWorkspace } from "@/components/kitchen/ingredient-workspace";
-import { IngredientIllustration } from "@/components/visuals/ingredient-illustration";
 import { featuredRecipes } from "@/data/featured-recipes";
-import type { IngredientCategory } from "@/types/database";
-
-const floatingIngredients = [
-  { label: "Tomato", category: "vegetable", className: "left-[8%] top-[21%] delay-0" },
-  { label: "Garlic", category: "aromatic", className: "right-[15%] top-[16%] delay-200" },
-  { label: "Broccoli", category: "vegetable", className: "left-[18%] bottom-[16%] delay-500" },
-  { label: "Butter", category: "dairy", className: "right-[8%] bottom-[24%] delay-700" },
-];
 
 const foundationCards = [
   {
@@ -260,24 +251,6 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {floatingIngredients.map((ingredient, index) => (
-          <motion.div
-            key={ingredient.label}
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.35 + index * 0.12, type: "spring", bounce: 0.5 }}
-            className={`absolute hidden size-20 place-items-center rounded-3xl border border-[var(--color-warm-brown)]/15 bg-white/60 shadow-[5px_5px_0_rgba(61,43,31,0.12)] backdrop-blur lg:grid ${ingredient.className}`}
-            style={{ animation: `floatIngredient ${4 + index * 0.4}s ease-in-out infinite` }}
-            aria-label={ingredient.label}
-          >
-            <IngredientIllustration
-              name={ingredient.label}
-              category={ingredient.category as IngredientCategory}
-              size="sm"
-              className="size-14"
-            />
-          </motion.div>
-        ))}
       </section>
 
       <section className="relative z-10 px-5 py-16 sm:px-8 lg:px-12">
