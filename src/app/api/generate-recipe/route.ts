@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -18,41 +17,24 @@ const requestSchema = z.object({
     .optional(),
 });
 
-const stepSchema = z.object({
-  step_number: z.number().int().positive(),
-  title: z.string().min(1),
-  action: z.string().min(1),
-  ingredient_involved: z.string().min(1),
-  duration_seconds: z.number().int().min(5).max(900),
-  animation_type: z.enum(["chop", "fry", "boil", "stir", "bake", "plate", "rest"]),
-});
-
-const recipeSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().min(1),
-  cook_time: z.number().int().min(1).max(240),
-  difficulty: z.enum(["easy", "medium", "hard"]),
-  cuisine: z.string().min(1),
-  steps: z.array(stepSchema).min(3).max(8),
-  match_score: z.number().int().min(0).max(100).optional(),
-  substitutions: z.array(z.string()).optional(),
-  taste_notes: z.array(z.string()).optional(),
-  shopping_list: z.array(z.string()).optional(),
-  nutrition: z
-    .object({
-      calories: z.number().int().min(0),
-      protein: z.number().int().min(0),
-      carbs: z.number().int().min(0),
-      fat: z.number().int().min(0),
-    })
-    .optional(),
-});
-
-const responseSchema = z.object({
-  recipes: z.array(recipeSchema).length(3),
-});
-
-type GeneratedRecipe = z.infer<typeof recipeSchema>;
+type GeneratedRecipe = {
+  name: string;
+  description: string;
+  cook_time: number;
+  difficulty: "easy" | "medium" | "hard";
+  cuisine: string;
+  steps: RecipeStep[];
+  match_score?: number;
+  substitutions?: string[];
+  taste_notes?: string[];
+  shopping_list?: string[];
+  nutrition?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+};
 type SavedGeneratedRecipe = Omit<
   GeneratedRecipe,
   "ingredients" | "match_score" | "substitutions" | "taste_notes" | "shopping_list" | "nutrition"
@@ -66,38 +48,7 @@ type SavedGeneratedRecipe = Omit<
   nutrition?: Json | null;
 };
 
-const systemPrompt = `You are a professional chef and recipe writer.
-The user has selected ingredients. Return ONLY a valid JSON object with NO markdown,
-NO backticks, NO preamble. Format:
-{
-  "recipes": [
-    {
-      "name": string,
-      "description": string,
-      "cook_time": number,
-      "difficulty": "easy" | "medium" | "hard",
-      "cuisine": string,
-      "match_score": number,
-      "substitutions": string[],
-      "taste_notes": string[],
-      "shopping_list": string[],
-      "nutrition": { "calories": number, "protein": number, "carbs": number, "fat": number },
-      "steps": [
-        {
-          "step_number": number,
-          "title": string,
-          "action": string,
-          "ingredient_involved": string,
-          "duration_seconds": number,
-          "animation_type": "chop" | "fry" | "boil" | "stir" | "bake" | "plate" | "rest"
-        }
-      ]
-    }
-  ]
-}
-Return exactly 3 dish options.`;
-
-const fallbackRecipes = (
+const generateRecipeOptions = (
   ingredients: string[],
   preferences?: z.infer<typeof requestSchema>["preferences"],
 ): GeneratedRecipe[] => {
@@ -259,22 +210,6 @@ const fallbackRecipes = (
   ];
 };
 
-const extractClaudeText = (message: Anthropic.Messages.Message) =>
-  message.content
-    .filter((block) => block.type === "text")
-    .map((block) => block.text)
-    .join("\n");
-
-const normalizeClaudePayload = (rawText: string) => {
-  const parsed: unknown = JSON.parse(rawText);
-  const recipesValue =
-    Array.isArray(parsed) || (typeof parsed === "object" && parsed !== null && "name" in parsed)
-      ? { recipes: Array.isArray(parsed) ? parsed : [parsed, parsed, parsed] }
-      : parsed;
-
-  return responseSchema.parse(recipesValue);
-};
-
 const saveRecipes = async (
   recipes: GeneratedRecipe[],
   ingredients: string[],
@@ -345,33 +280,7 @@ export async function POST(request: Request) {
   }
 
   const { ingredients, preferences } = parsedRequest.data;
-  let recipes = fallbackRecipes(ingredients, preferences);
-
-  if (process.env.ANTHROPIC_API_KEY) {
-    try {
-      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-      const message = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2400,
-        temperature: 0.8,
-        system: systemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: `Selected ingredients: ${ingredients.join(", ")}
-Preferences: ${JSON.stringify(preferences ?? {})}
-Prioritize recipes that use as many selected ingredients as possible. Include match_score, substitutions, and taste_notes.`,
-          },
-        ],
-      });
-
-      const payload = normalizeClaudePayload(extractClaudeText(message));
-      recipes = payload.recipes;
-    } catch {
-      recipes = fallbackRecipes(ingredients, preferences);
-    }
-  }
-
+  const recipes = generateRecipeOptions(ingredients, preferences);
   const savedRecipes = await saveRecipes(recipes, ingredients);
 
   return NextResponse.json({

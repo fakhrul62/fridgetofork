@@ -14,7 +14,6 @@ export const env = {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     getRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
 };
 
 export const publicEnv = {
